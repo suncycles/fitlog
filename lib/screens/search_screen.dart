@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 //import 'exercise_view_screen.dart';
 import 'home_screen.dart';
 import 'view_workouts_list_screen.dart';
+import 'exercise_view_screen.dart';
+import 'body_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
