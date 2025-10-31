@@ -1,8 +1,10 @@
+import 'package:fitlog/screens/exercise_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
 
 
+// todo: add button things for all screens, just to test how they look
 void main() {
   runApp(const MyApp());
 }
@@ -12,7 +14,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      
+      title: 'Exercise Preview',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home:const ExerciseViewScreen()
     );
   }
 }

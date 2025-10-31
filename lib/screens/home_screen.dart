@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 //import 'exercise_progress_screen.dart';
 //import 'recent_session_screen.dart';
 import 'search_screen.dart';
+import 'recent_session_screen.dart';
+import 'exercise_progress_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const _HomepagePanel(),
     const SearchScreen(),
-    const WorkoutsListScreen(),
+    const HomeScreen(),
   ];
 
   @override
@@ -70,7 +72,7 @@ class _HomepagePanel extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const WorkoutsListScreen()),
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
                 );
               },
               child: Container(
@@ -98,7 +100,7 @@ class _HomepagePanel extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProgressScreen()),
+                  MaterialPageRoute(builder: (_) => const ExerciseProgressScreen()),
                 );
               },
               child: Container(
