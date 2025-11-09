@@ -39,6 +39,64 @@ class _ExercisesPanel extends StatefulWidget {
 }
 
 class _ExercisesPanelState extends State<_ExercisesPanel> {
+  // Text controller and current search query
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  // Hard code data, replace with data in database later
+  static const List<_CategoryData> _Categories = [
+    _CategoryData(title: 'Quad', exerciseCount: '# of exercises'),
+    _CategoryData(title: 'Chest', exerciseCount: '# of exercises'),
+    _CategoryData(title: 'Arm', exerciseCount: '# of exercises'),
+  ];
+
+  /*
+  Returns a list of categories based on the current query sentence.
+
+  Args:
+    none
+
+  Returns:
+    type: List<_CategoryData>, a list of matched muscle group categories
+  */
+  List<_CategoryData> get _results {
+    if (_query.isEmpty) {
+      return _Categories;
+    }
+    final String queryLowercase = _query.toLowerCase(); // For case-insensitive
+    return _Categories.where((category) => category.title.toLowerCase().contains(queryLowercase)).toList();
+  }
+
+  /*
+  Updates the 'query' and show the new filtered list.
+
+  Args:
+    none
+
+  Returns:
+    type: void
+  */
+  void _doSearch() {
+    setState(() {
+      _query = _searchController.text.trim();
+    });
+  }
+
+  /*
+  Disposes resources of the TextEditingController.
+
+  Args:
+    none
+
+  Returns:
+    type: void
+  */
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color bodyViewColor = Color.fromARGB(255, 239, 83, 81);
@@ -94,29 +152,46 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: TextField(
+                    controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search for ...',
                       border: InputBorder.none,
                     ),
+                    onSubmitted: (_) => _doSearch(),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: () {},
+                  onPressed: _doSearch,
                 ),
+                if (_query.isNotEmpty || _searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          //Muscle Groups
-          const _CategoryCard(title: 'Quad', exerciseCount: '# of exercises'),
-          const SizedBox(height: 16),
-          const _CategoryCard(title: 'Chest', exerciseCount: '# of exercises'),
-          const SizedBox(height: 16),
-          const _CategoryCard(title: 'Arm', exerciseCount: '# of exercises'),
+          // Search results list
+          if (_results.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('No results found', style: TextStyle(color: Colors.black54)),
+              ),
+            )
+          else
+            ..._results.expand((category) => [
+              _CategoryCard(title: category.title, exerciseCount: category.exerciseCount),
+              const SizedBox(height: 16),
+            ]),
         ],
       ),
     );
@@ -197,4 +272,11 @@ class _CategoryCardState extends State<_CategoryCard> {
       ),
     );
   }
+}
+
+// Fake class of categories, will replace later
+class _CategoryData {
+  final String title;
+  final String exerciseCount;
+  const _CategoryData({required this.title, required this.exerciseCount});
 }
