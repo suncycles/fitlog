@@ -2,6 +2,7 @@ import 'dart:async';
 import 'exercise_class.dart';
 import 'history_class.dart';
 import 'workout_class.dart';
+import 'database_helper.dart';
 
 // All dummy functions. Replace with SQL queris
 class WorkoutDatabase {
