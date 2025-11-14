@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'view_workouts_list_screen.dart';
+import 'view_workouts_list_screen.dart';
 //import 'exercise_progress_screen.dart';
 //import 'recent_session_screen.dart';
 import 'search_screen.dart';
@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const _HomepagePanel(),
     const SearchScreen(),
-    const HomeScreen(),
+    const WorkoutsListScreen(),
   ];
 
   @override
