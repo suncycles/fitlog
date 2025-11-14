@@ -45,6 +45,15 @@ class WorkoutDatabase {
   }
   
   Future<Exercise?> getExercise(int id) {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query('exercise_list', where: 'exercise_id = ?,[id]);
+    
+    if (result.isNotEmpty) {
+      return Exercise.fromMap(result.first);
+    }
+
+    return null;
 
   }
 
@@ -60,20 +69,32 @@ class WorkoutDatabase {
     return ['Chest', 'Back', 'Legs'];
   }
   
-  Future<int> addExerciseToWorkout(String workoutName, int exerciseId, int numSets) async {
+  Future<void> addExerciseToWorkout(String workoutName, int exerciseId, int numSets) async {
     // INSERT INTO workout_builder(workoutName, exerciseId, numSets)
     // Ask user name of workout when create new workout button pressed
     // Ask user number of sets they want to do when adding an exercise to workout
     //GOOD TO GO
+    final db = await DatabaseHelper.instance.database;
+
+    await db.insert('workout_builder', {'workout_name': workoutName, 'exercise_id': exerciseId, 'sets': numSets});
   }
 
   Future<List<Workout>> getWorkouts() async {
     // Fetching all workouts, just the names use getWorkout to pull up all info after clicking on it
-    List<Workout> list = SELECT DISTINCT workout_name FROM workout_builder;
-    return [];
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.rawQuery('SELECT DISTINCT wokrout_name FROM workout_builder');
+
+
+    return result.map((row) => row['workout_name'] as String).toList();
   }
 
-  Future<Workout?> getWorkout(String workoutName) async {
+  Future<List<Workout>> getWorkout(String workoutName) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query ('workout_builder', where: 'workout_name = ?, [workoutName]);
+
+    return result.map((row) -> Workout.fromJson(row)).toList();
     // Fetching workout with id
     // This gets all the exercise ids from a particular workout to be able to pull up any info we need
     // SELECT exercise_id FROM workout_builder WHERE workout_name = workoutName;
