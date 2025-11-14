@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-//import 'body_screen.dart';
-//import 'exercise_view_screen.dart';
 import 'home_screen.dart';
 import 'view_workouts_list_screen.dart';
-import 'exercise_view_screen.dart';
+import 'exercise_list_screen.dart';
 import 'body_screen.dart';
+import '../class/accessor_functions.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -43,32 +42,40 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  // Hard code data, replace with data in database later
-  static const List<_CategoryData> _Categories = [
-    _CategoryData(title: 'Quad', exerciseCount: '# of exercises'),
-    _CategoryData(title: 'Chest', exerciseCount: '# of exercises'),
-    _CategoryData(title: 'Arm', exerciseCount: '# of exercises'),
-  ];
+  // Load all muscle groups from database
+  List<String> _allMuscleGroups = [];
+  // Filtered list shown in UI
+  List<String> _uiMuscleGroups = [];
+
+  bool _isLoading = true;
 
   /*
-  Returns a list of categories based on the current query sentence.
+  Load the list of muscle groups from workoutDB, and exercise counts of each muscle group.
 
   Args:
     none
 
   Returns:
-    type: List<_CategoryData>, a list of matched muscle group categories
+    type: Future<void>
   */
-  List<_CategoryData> get _results {
-    if (_query.isEmpty) {
-      return _Categories;
-    }
-    final String queryLowercase = _query.toLowerCase(); // For case-insensitive
-    return _Categories.where((category) => category.title.toLowerCase().contains(queryLowercase)).toList();
+  Future<void> _loadMuscleGroups() async {
+    final db = WorkoutDatabase.instance;
+    final musclegroups = await db.getPrimaryMuscles();
+    setState(() {
+      _allMuscleGroups = musclegroups;
+      _uiMuscleGroups = musclegroups;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMuscleGroups();
   }
 
   /*
-  Updates the 'query' and show the new filtered list.
+  Updates '_query' and '_uiMuscleGroups' when the users search.
 
   Args:
     none
@@ -79,6 +86,12 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
   void _doSearch() {
     setState(() {
       _query = _searchController.text.trim();
+      if(_query.isEmpty) {
+        _uiMuscleGroups = _allMuscleGroups;
+      } else {
+        final lowerQuery = _query.toLowerCase();
+        _uiMuscleGroups = _allMuscleGroups.where((m) => m.toLowerCase().contains(lowerQuery)).toList();
+      }
     });
   }
 
@@ -155,8 +168,8 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search for ...',
+                    decoration: const InputDecoration(
+                      hintText: 'Search for muscle group...',
                       border: InputBorder.none,
                     ),
                     onSubmitted: (_) => _doSearch(),
@@ -165,13 +178,15 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
                 IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _doSearch,
+                  tooltip: 'Search',
                 ),
                 if (_query.isNotEmpty || _searchController.text.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.clear),
+                    tooltip: 'Clear',
                     onPressed: () {
                       _searchController.clear();
-                      setState(() => _query = '');
+                      setState(() {_query = ''; _uiMuscleGroups = _allMuscleGroups;});
                     },
                   ),
               ],
@@ -179,72 +194,81 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
           ),
           const SizedBox(height: 20),
 
-          // Search results list
-          if (_results.isEmpty)
+          if(_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if(_uiMuscleGroups.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('No results found', style: TextStyle(color: Colors.black54)),
+                child: Text('No muscle groups found', style: TextStyle(color: Colors.black54)),
               ),
             )
           else
-            ..._results.expand((category) => [
-              _CategoryCard(title: category.title, exerciseCount: category.exerciseCount),
-              const SizedBox(height: 16),
-            ]),
+            // Build one card per muscle group
+            ..._uiMuscleGroups.expand(
+              (muscle) => [
+                _PrimaryMuscleCard(primaryMuscle: muscle),
+                const SizedBox(height: 16),
+              ]
+            ),
         ],
       ),
     );
   }
 }
 
-class _CategoryCard extends StatefulWidget {
-  const _CategoryCard({super.key, required this.title, required this.exerciseCount});
+/*
+Card widget for one primary muscle in the list.
 
-  final String title;
-  final String exerciseCount;
+Includes:
+- primary muscle name
+- "# of exercises found"
+- image
+- "Browse All" button to go to ExerciseListScreen.
+*/
+class _PrimaryMuscleCard extends StatelessWidget {
+  const _PrimaryMuscleCard({super.key, required this.primaryMuscle});
 
-  @override
-  State<_CategoryCard> createState() => _CategoryCardState();
-}
+  final String primaryMuscle;
 
-class _CategoryCardState extends State<_CategoryCard> {
   @override
   Widget build(BuildContext context) {
     const Color cardColor = Color.fromARGB(255, 217, 217, 217);
 
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
+        color: const Color.fromARGB(255, 217, 217, 217),
         borderRadius: BorderRadius.circular(6),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Name of muscle group and exercises count
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                //Muscle Group Title
                 Text(
-                  widget.title,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                  primaryMuscle,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                //Number of Exercises
-                Text(
-                  widget.exerciseCount,
-                  style: const TextStyle(fontSize: 14),
+                const Text(
+                  '# of exercises',
+                  style: TextStyle(fontSize: 14),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
 
+          // Image and 'Browse All' button
           Column(
             children: [
-              // Image
               Container(
                 width: 100,
                 height: 70,
@@ -256,12 +280,14 @@ class _CategoryCardState extends State<_CategoryCard> {
                 child: const Text('Image'),
               ),
               const SizedBox(height: 12),
-              //Exercises Button
               OutlinedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ExerciseViewScreen()),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ExerciseListScreen(primaryMuscle: primaryMuscle),
+                    ),
                   );
                 },
                 child: const Text('Browse All'),
@@ -272,11 +298,4 @@ class _CategoryCardState extends State<_CategoryCard> {
       ),
     );
   }
-}
-
-// Fake class of categories, will replace later
-class _CategoryData {
-  final String title;
-  final String exerciseCount;
-  const _CategoryData({required this.title, required this.exerciseCount});
 }
