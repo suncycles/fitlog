@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home:const HomeScreen()
+      home:const MidWorkoutExerciseScreen(workoutId: 11,exerciseId: 10,exerciseName: "Dead Pull")
     );
   }
 }

@@ -5,7 +5,10 @@ class ExerciseHistory {
   final DateTime date;
   final List<String> sets;
   final String? notes;
-
+  final String? exerciseName;   
+  final String? workoutName;    
+  final int? weight;           
+  final int? reps;     
   ExerciseHistory({
     this.id,
     required this.workoutId,
@@ -13,6 +16,10 @@ class ExerciseHistory {
     required this.date,
     required this.sets,
     this.notes,
+    this.exerciseName,
+    this.workoutName,
+    this.weight,
+    this.reps,
   });
 
   factory ExerciseHistory.fromJson(Map<String, dynamic> json) => ExerciseHistory(
@@ -23,18 +30,4 @@ class ExerciseHistory {
         sets: List<String>.generate(10, (i) => json['set${i + 1}'] ?? '').where((s) => s.isNotEmpty).toList(),
         notes: json['notes'],
       );
-
-  Map<String, dynamic> toJson() {
-    final map = {
-      'history_id': id,
-      'workout_id': workoutId,
-      'exercise_id': exerciseId,
-      'exercise_date': date.toIso8601String(),
-      'notes': notes,
-    };
-    for (int i = 0; i < sets.length && i < 10; i++) {
-      map['set${i + 1}'] = sets[i];
-    }
-    return map;
-  }
 }
