@@ -8,72 +8,49 @@ class WorkoutDatabase {
   static final WorkoutDatabase instance = WorkoutDatabase._init();
   WorkoutDatabase._init();
 
-  Future<List<Exercise>> getExercises({String? primaryMuscle, String? search}) async {
-    // Fetching exercises filtered by primaryMuscle
-    return [];
+    //Search specific exercise by Name
+  Future<Map<String, dynamic>?> searchExerciseInfo(String exerciseName) async {
+    final results = await db.rawQuery('SELECT * FROM exercise_list WHERE exercise_name = ?', [exerciseName]);
+    
+    return results;
   }
-
-  Future<Exercise?> getExercise(int id) async {
-    // Fetching exercise with id
-    return null;
+  
+  // Search for a workout by name
+  Future<Map<String, dynamic>?> searchWorkout(String workoutName) async {
+    final results = await db.rawQuery('SELECT * FROM workout_builder WHERE workout_name = ?', [workoutName]);
+    
+    return results;
   }
-
-  Future<int> createExercise(Exercise exercise) async {
-    // Inserting new exercise into db
-    return 1;
+  
+  // Get history for a specific exercise
+  Future<List<Map<String, dynamic>>> getExerciseHistory(int exerciseId) async {
+    final results = await db.rawQuery(('SELECT * FROM exercise_history WHERE exercise_id = ?', [exerciseId]) 5 ORDER BY exercise_date DESC);
+  
+    return results;
   }
-
-  Future<List<String>> getPrimaryMuscles() async {
-    // Fetching primary muscle groups
-    return ['Chest', 'Back', 'Legs'];
+  
+  // Create a new workout with exercises
+  Future<int> createWorkout(Workout new_workout){
+  	await db.rawQuery('INSERT INTO workout_builder (new_workout)');
+  	print('Successfully Saved workout');
+  	return 1;
   }
-
-  Future<int> createWorkout(Workout workout) async {
-    // Creating workout
-    return 1;
+  
+  // Get the most recent workout session by workout name
+  Future<Map<String, dynamic>?> getMostRecentWorkout(String workoutName) async {
+  
+    final results = await db.rawQuery('SELECT * FROM exercise_history WHERE workout_id = (SELECT workout_id FROM workout_builder WHERE workout_name = ?', [workoutName]) ORDER BY exercise_date DESC LIMIT 1);
+    
+    return results;
   }
-
-  Future<List<Workout>> getWorkouts() async {
-    // Fetching all workouts
-    return [];
+  
+  //Get all exercises for a specific muscle group
+  Future<List<Map<String, dynamic>>> getExercisesByMuscleGroup(String muscleGroup) async {  
+  	
+    final results = await db.rawQuery('SELECT * FROM exercise_list WHERE primary_muscles = ?', [muscleGroup]);
+    
+    return results;
+    
   }
-
-  Future<Workout?> getWorkout(int id) async {
-    // Fetching workout with id
-    return null;
-  }
-
-  Future<int> updateWorkout(Workout workout) async {
-    // Updating workout by ID
-    return 1;
-  }
-
-  Future<int> deleteWorkout(int id) async {
-    // Deleting workout by ID
-    return 1;
-  }
-
-  Future<int> createExerciseHistory(ExerciseHistory history) async {
-    // Logging history for exercise
-    return 1;
-  }
-
-  Future<List<ExerciseHistory>> getExerciseHistory(int workoutId) async {
-    // Fetching history for workoutId
-    return [];
-  }
-
-  Future<int> updateExerciseHistory(ExerciseHistory history) async {
-    // Updating exercise history by ID
-    return 1;
-  }
-
-  Future<int> deleteExerciseHistory(int id) async {
-    // Deleting exercise history by ID
-    return 1;
-  }
-
-  Future close() async {
-    // Closing dummy database connection
-  }
+  
 }
