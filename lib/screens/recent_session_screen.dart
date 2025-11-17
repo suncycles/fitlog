@@ -10,7 +10,7 @@ class RecentSessionScreen extends StatelessWidget {
   /// Load the most recent workout session from the history table.
   Future<List<ExerciseHistory>> _loadRecentSession() async {
     final db = WorkoutDatabase.instance;
-    final allHistory = await db.getExerciseHistories();
+    final allHistory = await db.getExerciseHistory(0);
 
     if (allHistory.isEmpty) return [];
 
