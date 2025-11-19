@@ -30,4 +30,19 @@ class ExerciseHistory {
         sets: List<String>.generate(10, (i) => json['set${i + 1}'] ?? '').where((s) => s.isNotEmpty).toList(),
         notes: json['notes'],
       );
+
+    
+    Map<String, dynamic> toJson() {
+    final map = {
+      'history_id': id,
+      'workout_id': workoutId,
+      'exercise_id': exerciseId,
+      'exercise_date': date.toIso8601String(),
+      'notes': notes,
+    };
+    for (int i = 0; i < sets.length && i < 10; i++) {
+      map['set${i + 1}'] = sets[i];
+    }
+    return map;
+  }
 }
