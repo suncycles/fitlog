@@ -5,7 +5,10 @@ class ExerciseHistory {
   final DateTime date;
   final List<String> sets;
   final String? notes;
-
+  final String? exerciseName;   
+  final String? workoutName;    
+  final int? weight;           
+  final int? reps;     
   ExerciseHistory({
     this.id,
     required this.workoutId,
@@ -13,6 +16,10 @@ class ExerciseHistory {
     required this.date,
     required this.sets,
     this.notes,
+    this.exerciseName,
+    this.workoutName,
+    this.weight,
+    this.reps,
   });
 
   factory ExerciseHistory.fromJson(Map<String, dynamic> json) => ExerciseHistory(
@@ -24,7 +31,8 @@ class ExerciseHistory {
         notes: json['notes'],
       );
 
-  Map<String, dynamic> toJson() {
+    
+    Map<String, dynamic> toJson() {
     final map = {
       'history_id': id,
       'workout_id': workoutId,
