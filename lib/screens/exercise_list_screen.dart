@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
+import '../class/database_helper.dart';
+import '../class/accessor_functions.dart';
+import '../class/exercise_class.dart';
+
 
 class ExerciseListScreen extends StatefulWidget {
   const ExerciseListScreen({super.key, required this.primaryMuscle});
-
   /// Primary muscle group for this list.
   final String primaryMuscle;
 
@@ -13,7 +16,37 @@ class ExerciseListScreen extends StatefulWidget {
 }
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
+
   late Future<List<Exercise>> _futureExercises;
+  List<List<Exercise?>> _exercises = [];
+  List<String> _muscleGroups = [];
+  String? _selectedMuscleGroup;
+  String _searchQuery = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    List<String> muscleGroups = await WorkoutDatabase.instance.getPrimaryMuscles();
+    
+    List<List<Exercise?>> exercises = []; // Clean up later
+
+    if(muscleGroups != null){
+      for(var muscle in muscleGroups) {
+        List<Exercise?> groupExercises = await WorkoutDatabase.instance.getExercises();
+        exercises.add(groupExercises);
+      }
+    }
+    setState(() {
+      _muscleGroups = muscleGroups;
+      _exercises = exercises;
+      _isLoading = false;
+    });
+  }
 
   /*
   Load all exercises for the given primary muscle from the database.
@@ -24,16 +57,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   Returns:
     type: Future<List<Exercise>>: all exercises for that muscle.
   */
-  Future<List<Exercise>> _loadExercises() {
-    final db = WorkoutDatabase.instance;
-    return db.getExercises(primaryMuscle: widget.primaryMuscle);
-  }
 
-  @override
-  void initState() {
-    super.initState();
-    _futureExercises = _loadExercises();
-  }
 
   @override
   Widget build(BuildContext context) {
