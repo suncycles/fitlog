@@ -2,6 +2,7 @@ import 'dart:async';
 import 'exercise_class.dart';
 import 'history_class.dart';
 import 'workout_class.dart';
+import 'database_helper.dart';
 import 'dart:io';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -11,33 +12,41 @@ import 'package:sqflite/sqflite.dart';
 
 class WorkoutDatabase {
   static final WorkoutDatabase instance = WorkoutDatabase._init();
-  static Database? _database;
+static Database? _database;
 
   WorkoutDatabase._init();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('workoutDB.db');
-    return _database!;
-  }
+  Future<List<Exercise?>> getExercises({String? primaryMuscle, String? search}) async {
+    // Fetching exercises filtered by primaryMuscle
+    final db = await DatabaseHelper.instance.database;
+    List<Map<String, dynamic>> result;
 
-
-  Future<Database> _initDB(String fileName) async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentsDirectory.path, fileName);
-
-    final exists = await File(path).exists();
-    if (!exists) {
-      final data = await rootBundle.load('DB/workoutDB.db'); 
-      final bytes = data.buffer.asUint8List();
-      await File(path).writeAsBytes(bytes, flush: true);
+    if (primaryMuscle != null) {
+       result = await db.query(
+        'exercise_list',
+        where: 'primary_muscles = ?',
+        whereArgs: [primaryMuscle]
+      );
     }
 
-    return await openDatabase(path, version: 1);
+    else if (search != null) {
+      final searchPattern = '%$search%';
+       result = await db.query(
+        'exercise_list',
+        where: 'exercise_name LIKE ?',
+        whereArgs: [searchPattern]
+      );
+    }
+    else {
+      result = await db.query('exercise_list');
+    }
+
+    return result.map((map) => Exercise.fromJson(map)).toList();
+
   }
 
   Future<Exercise?> getExercise(int id) async {
-    final db = await WorkoutDatabase.instance.database;
+    final db = await DatabaseHelper.instance.database;
 
     // Query the exercise_list table
     final result = await db.query(
@@ -56,14 +65,17 @@ class WorkoutDatabase {
     return exercise;
   }
 
-  Future<List<Exercise>> getExercises({String? primaryMuscle, String? search}) async {
-    // Fetching exercises filtered by primaryMuscle
-    return [];
-  }
-
   Future<List<String>> getPrimaryMuscles() async {
+    final db = await DatabaseHelper.instance.database;
+    List<Map<String, dynamic>> result;
+    // FINISH THIS PART NEED TO CHOSE DISTINCT
+    result = await db.query(
+        'exercise_list',
+        distinct:true,
+        columns: ['primary_muscles']
+      );
     // Fetching primary muscle groups
-    return ['Chest', 'Back', 'Legs'];
+    return result.map((row) => row['primary_muscles'] as String).toList();
   }
 
   Future<List<ExerciseHistory>> getExerciseHistory(int workoutId) async {
@@ -82,9 +94,7 @@ class WorkoutDatabase {
     if (all_workouts.isNotEmpty) {
       return all_workouts;
     } else {
-      return [];
-    }
-
+    return [];
   }
 
   Future<Workout?> getWorkout(int id) async {
@@ -96,9 +106,7 @@ class WorkoutDatabase {
     if (workouts.isNotEmpty) {
       return workouts.first;
     } else {
-      return null;
-    }
-
+    return null;
   }
 
   Future<int> updateWorkout(Workout workout) async {
