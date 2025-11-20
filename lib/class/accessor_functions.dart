@@ -4,7 +4,6 @@ import 'history_class.dart';
 import 'workout_class.dart';
 import 'database_helper.dart';
 import 'dart:io';
-
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,133 +11,117 @@ import 'package:sqflite/sqflite.dart';
 
 class WorkoutDatabase {
   static final WorkoutDatabase instance = WorkoutDatabase._init();
-static Database? _database;
+  static Database? _database;
 
   WorkoutDatabase._init();
 
   Future<List<Exercise?>> getExercises({String? primaryMuscle, String? search}) async {
-    // Fetching exercises filtered by primaryMuscle
     final db = await DatabaseHelper.instance.database;
     List<Map<String, dynamic>> result;
 
     if (primaryMuscle != null) {
-       result = await db.query(
+      result = await db.query(
         'exercise_list',
         where: 'primary_muscles = ?',
-        whereArgs: [primaryMuscle]
+        whereArgs: [primaryMuscle],
       );
-    }
-
-    else if (search != null) {
+    } else if (search != null) {
       final searchPattern = '%$search%';
-       result = await db.query(
+      result = await db.query(
         'exercise_list',
         where: 'exercise_name LIKE ?',
-        whereArgs: [searchPattern]
+        whereArgs: [searchPattern],
       );
-    }
-    else {
+    } else {
       result = await db.query('exercise_list');
     }
 
     return result.map((map) => Exercise.fromJson(map)).toList();
-
   }
 
   Future<Exercise?> getExercise(int id) async {
     final db = await DatabaseHelper.instance.database;
 
-    // Query the exercise_list table
     final result = await db.query(
       'exercise_list',
       where: 'exercise_id = ?',
       whereArgs: [id],
     );
 
+    if (result.isEmpty) return null;
 
-    if (result.isEmpty) {
-      return null;
-    }
-
-    final exercise = Exercise.fromJson(result.first);
-
-    return exercise;
+    return Exercise.fromJson(result.first);
   }
 
   Future<List<String>> getPrimaryMuscles() async {
     final db = await DatabaseHelper.instance.database;
-    List<Map<String, dynamic>> result;
-    // FINISH THIS PART NEED TO CHOSE DISTINCT
-    result = await db.query(
-        'exercise_list',
-        distinct:true,
-        columns: ['primary_muscles']
-      );
-    // Fetching primary muscle groups
+
+    final result = await db.query(
+      'exercise_list',
+      distinct: true,
+      columns: ['primary_muscles'],
+    );
+
     return result.map((row) => row['primary_muscles'] as String).toList();
   }
 
   Future<List<ExerciseHistory>> getExerciseHistory(int workoutId) async {
-    // Fetching history for workoutId - do
-    final db = await database;
-    final List<ExerciseHistory> history = await db.query('exercise_history', where: 'workout_id = ?', whereArgs: [workoutId]).then((maps) => maps.map((map) => ExerciseHistory.fromJson(map)).toList());
-    return history;
+    final db = await DatabaseHelper.instance.database;
+
+    final maps = await db.query(
+      'exercise_history',
+      where: 'workout_id = ?',
+      whereArgs: [workoutId],
+    );
+
+    return maps.map((map) => ExerciseHistory.fromJson(map)).toList();
   }
- 
 
   Future<List<Workout>> getWorkouts() async {
-    // Fetching all workouts
-    final db = await database;
-    final List<Workout> all_workouts = await db.query('workouts').then((maps) => maps.map((map) => Workout.fromJson(map)).toList());
+    final db = await DatabaseHelper.instance.database;
 
-    if (all_workouts.isNotEmpty) {
-      return all_workouts;
-    } else {
-    return [];
+    final maps = await db.query('workouts');
+    return maps.map((map) => Workout.fromJson(map)).toList();
   }
 
   Future<Workout?> getWorkout(int id) async {
-    // Fetching workout with id
-    final db = await database;
-  
-    final List<Workout?> workouts = await db.query('workouts', where: 'workout_id = ?', whereArgs: [id]).then((maps) => maps.map((map) => Workout.fromJson(map)).toList());
+    final db = await DatabaseHelper.instance.database;
 
-    if (workouts.isNotEmpty) {
-      return workouts.first;
-    } else {
-    return null;
+    final maps = await db.query(
+      'workouts',
+      where: 'workout_id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+    return Workout.fromJson(maps.first);
   }
 
   Future<int> updateWorkout(Workout workout) async {
-    // Updating workout by ID
-    final db = await database;
-    final int? id = workout.id;
-    final List<Workout?> workouts = await db.query('workouts', where: 'workout_id = ?', whereArgs: [id]).then((maps) => maps.map((map) => Workout.fromJson(map)).toList());
+    final db = await DatabaseHelper.instance.database;
 
-    if (workouts.isNotEmpty) {
-      return await db.update('workouts', workout.toJson(), where: 'workout_id = ?', whereArgs: [workout.  id]);
-    } else {
-      return 0;
-    }
-  
+    if (workout.id == null) return 0;
+
+    return await db.update(
+      'workouts',
+      workout.toJson(),
+      where: 'workout_id = ?',
+      whereArgs: [workout.id],
+    );
   }
 
   Future<int> deleteWorkout(int id) async {
-    // Deleting workout by ID
-    final db = await database;
-  
-    final List<Workout?> workouts = await db.query('workouts', where: 'workout_id = ?', whereArgs: [id]).then((maps) => maps.map((map) => Workout.fromJson(map)).toList());
+    final db = await DatabaseHelper.instance.database;
 
-    if (workouts.isNotEmpty) {
-      return await db.delete('workouts', where: 'workout_id = ?', whereArgs: [id]);
-    } else {
-      return 0;
-    }
+    return await db.delete(
+      'workouts',
+      where: 'workout_id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<int> createExerciseHistory(ExerciseHistory history) async {
-    // Logging history for exercise 
-    final db = await database;
+    final db = await DatabaseHelper.instance.database;
 
     if (history.id != null) {
       return await db.insert('exercise_history', history.toJson());
@@ -147,7 +130,6 @@ static Database? _database;
     }
   }
 
-  
   Future<void> close() async {
     final db = _database;
     if (db != null) await db.close();
