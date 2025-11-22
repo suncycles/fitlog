@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
 import '../class/database_helper.dart';
-import '../class/accessor_functions.dart';
-import '../class/exercise_class.dart';
-
 
 class ExerciseListScreen extends StatefulWidget {
   const ExerciseListScreen({super.key, required this.primaryMuscle});

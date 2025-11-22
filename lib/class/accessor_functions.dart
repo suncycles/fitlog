@@ -80,7 +80,7 @@ class WorkoutDatabase {
   Future<List<Workout>> getWorkouts() async {
     final db = await DatabaseHelper.instance.database;
 
-    final maps = await db.query('workouts');
+    final maps = await db.query('workout_builder');
     return maps.map((map) => Workout.fromJson(map)).toList();
   }
 
@@ -88,7 +88,7 @@ class WorkoutDatabase {
     final db = await DatabaseHelper.instance.database;
 
     final maps = await db.query(
-      'workouts',
+      'workout_builder',
       where: 'workout_id = ?',
       whereArgs: [id],
     );
@@ -97,13 +97,18 @@ class WorkoutDatabase {
     return Workout.fromJson(maps.first);
   }
 
+  Future<int> createWorkout(Workout workout) async {
+    final db = await DatabaseHelper.instance.database;
+    return await db.insert('workout_builder', workout.toJson());
+  }
+
   Future<int> updateWorkout(Workout workout) async {
     final db = await DatabaseHelper.instance.database;
 
     if (workout.id == null) return 0;
 
     return await db.update(
-      'workouts',
+      'workout_builder',
       workout.toJson(),
       where: 'workout_id = ?',
       whereArgs: [workout.id],
@@ -114,7 +119,7 @@ class WorkoutDatabase {
     final db = await DatabaseHelper.instance.database;
 
     return await db.delete(
-      'workouts',
+      'workout_builder',
       where: 'workout_id = ?',
       whereArgs: [id],
     );
