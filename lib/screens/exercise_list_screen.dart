@@ -13,48 +13,57 @@ class ExerciseListScreen extends StatefulWidget {
 }
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
-
-  late Future<List<Exercise>> _futureExercises;
-  List<List<Exercise?>> _exercises = [];
-  List<String> _muscleGroups = [];
-  String? _selectedMuscleGroup;
-  String _searchQuery = '';
-  bool _isLoading = true;
+  List<Exercise> exercises = [];
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
+    loadExercises();
   }
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
 
-    List<String> muscleGroups = await WorkoutDatabase.instance.getPrimaryMuscles();
-    
-    List<List<Exercise?>> exercises = []; // Clean up later
+  Future<void> loadExercises() async {
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
 
-    if(muscleGroups != null){
-      for(var muscle in muscleGroups) {
-        List<Exercise?> groupExercises = await WorkoutDatabase.instance.getExercises();
-        exercises.add(groupExercises);
+      // Loading the database
+      final db = await DatabaseHelper.instance.database;
+
+      // Call accessor function to get exercises for the primary muscle
+      List<Exercise?> fetchedExercises = await WorkoutDatabase.instance.getExercises(
+        primaryMuscle: widget.primaryMuscle,
+      );
+
+      // Filter out null values
+      List<Exercise> validExercises = [];
+      if (fetchedExercises.isNotEmpty) {
+        for (var exercise in fetchedExercises) {
+          if (exercise != null) {
+            validExercises.add(exercise);
+          }
+        }
       }
+
+      setState(() {
+        exercises = validExercises;
+        isLoading = false;
+      });
+
+      print("Success! Loaded ${exercises.length} exercises for ${widget.primaryMuscle}");
+    } catch (e, stackTrace) {
+      print("ERROR loading exercises: $e");
+      print("Stack trace: $stackTrace");
+
+      setState(() {
+        errorMessage = "Error: $e";
+        isLoading = false;
+      });
     }
-    setState(() {
-      _muscleGroups = muscleGroups;
-      _exercises = exercises;
-      _isLoading = false;
-    });
   }
-
-  /*
-  Load all exercises for the given primary muscle from the database.
-
-  Args:
-    none
-
-  Returns:
-    type: Future<List<Exercise>>: all exercises for that muscle.
-  */
-
 
   @override
   Widget build(BuildContext context) {
@@ -73,29 +82,58 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: FutureBuilder<List<Exercise>>(
-            future: _futureExercises,
-            builder: (context, snapshot) {
-              final exercises = snapshot.data ?? [];
-
-              if (exercises.isEmpty) {
-                return const Center(
-                  child: Text('No exercises found for this muscle group.'),
-                );
-              }
-
-              return ListView.builder(
-                itemCount: exercises.length,
-                itemBuilder: (context, index) {
-                  final exercise = exercises[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _ExerciseCard(exercise: exercise),
-                  );
-                },
-              );
-            },
-          ),
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Error loading exercises',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: loadExercises,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : exercises.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.fitness_center, size: 48, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No exercises found for ${widget.primaryMuscle}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: exercises.length,
+                          itemBuilder: (context, index) {
+                            final exercise = exercises[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _ExerciseCard(exercise: exercise),
+                            );
+                          },
+                        ),
         ),
       ),
     );
@@ -126,7 +164,7 @@ class _ExerciseCard extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                exercise.name,
+                exercise.name ?? 'Unknown Exercise',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
