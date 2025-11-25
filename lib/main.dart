@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitlog/screens/home_screen.dart';
+import 'db_test.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const DbTest(),
     );
   }
 }
