@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     Future _createDB(Database db, int version) async {
         await db.execute('''
-        CREATE TABLE exercise_list (
+        CREATE TABLE IF NOT EXISTS exercise_list (
             exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
             exercise_name TEXT,
             primary_muscles TEXT,
@@ -33,7 +33,7 @@ class DatabaseHelper {
         ''');
 
         await db.execute('''
-        CREATE TABLE workout_builder (
+        CREATE TABLE IF NOT EXISTS workout_builder (
             workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
             workout_name TEXT NOT NULL,
             exercise_id INTEGER NOT NULL,
@@ -43,7 +43,7 @@ class DatabaseHelper {
         ''');
 
         await db.execute('''
-        CREATE TABLE exercise_history (
+        CREATE TABLE IF NOT EXISTS exercise_history (
             history_id INTEGER PRIMARY KEY AUTOINCREMENT,
             workout_id INTEGER,
             exercise_id INTEGER NOT NULL,
