@@ -65,6 +65,7 @@ flutter:
 
   assets:
     - assets/sql/workoutDB.sql
+    - assets/workoutDB.db
 
 
 

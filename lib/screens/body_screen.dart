@@ -22,7 +22,6 @@ class BodyScreenState extends State<BodyScreen> {
     _loadAvailableMuscles();
   }
 
-  // Load the actual muscle groups from your database
   Future<void> _loadAvailableMuscles() async {
     try {
       final muscles = await WorkoutDatabase.instance.getPrimaryMuscles();
@@ -60,12 +59,10 @@ class BodyScreenState extends State<BodyScreen> {
     return selected.join(', ');
   }
 
-  // Map body parts to muscle groups in your database
+  // Map body parts to muscle groups
   String? _mapBodyPartToMuscle(BodyParts bodyParts) {
-    // Print selected parts for debugging
-    _getSelectedParts(bodyParts);
     
-    // These strings match your database's primary_muscles column (lowercase)
+    _getSelectedParts(bodyParts);
     
     // Head and neck
     if (bodyParts.head) return 'neck';
@@ -74,10 +71,8 @@ class BodyScreenState extends State<BodyScreen> {
     // Shoulders
     if (bodyParts.leftShoulder || bodyParts.rightShoulder) return 'shoulders';
     
-    // Arms - Upper arm typically contains biceps/triceps
+    // Upper arms
     if (bodyParts.leftUpperArm || bodyParts.rightUpperArm) {
-      // You might want to return 'biceps' or 'triceps' depending on your preference
-      // Or create a dialog asking the user which muscle they want to target
       return 'biceps'; // Default to biceps
     }
     
@@ -94,7 +89,7 @@ class BodyScreenState extends State<BodyScreen> {
     
     // Legs - Upper leg contains quads, hamstrings, and glutes
     if (bodyParts.leftUpperLeg || bodyParts.rightUpperLeg) {
-      // Default to quadriceps, but could also be hamstrings or glutes
+      // Default to quads
       return 'quadriceps';
     }
     
@@ -106,7 +101,7 @@ class BodyScreenState extends State<BodyScreen> {
     if (bodyParts.leftFoot || bodyParts.rightFoot) return 'calves';
     
     // Lower body general
-    if (bodyParts.lowerBody) return 'quadriceps';
+    if (bodyParts.lowerBody) return 'abdominals';
     
     return null;
   }
