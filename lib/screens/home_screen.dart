@@ -72,7 +72,7 @@ class _HomepagePanel extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(builder: (_) => const WorkoutsListScreen()),
                 );
               },
               child: Container(

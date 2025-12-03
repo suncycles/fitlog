@@ -20,3 +20,12 @@ class Workout {
         'sets': sets,
       };
 }
+
+// Grouped workout class
+class WorkoutGroup {
+  final int? id;
+  final String name;
+  final List<Workout> exercisesInWorkout;
+
+  WorkoutGroup({this.id, required this.name, required this.exercisesInWorkout});
+}

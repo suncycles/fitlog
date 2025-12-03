@@ -84,6 +84,42 @@ class WorkoutDatabase {
     return maps.map((map) => Workout.fromJson(map)).toList();
   }
 
+  Future<List<WorkoutGroup>> getGroupedWorkouts() async {
+    final db = await DatabaseHelper.instance.database;
+
+    // Get all workouts
+    final rows = await db.query('workout_builder');
+
+    if (rows.isEmpty) {
+      print("No rows found in workout_builder");
+      return [];
+    }
+
+    // Convert to Workout objects
+    List<Workout> workouts = rows.map((row) => Workout.fromJson(row)).toList();
+
+    // Group by workout_name
+    Map<String, List<Workout>> grouped = {};
+    for (var w in workouts) {
+      if (!grouped.containsKey(w.name)) {
+        grouped[w.name] = [];
+      }
+      grouped[w.name]!.add(w);
+    }
+
+    // Convert to WorkoutGroup objects
+    List<WorkoutGroup> workoutGroups = grouped.entries
+        .map((entry) => WorkoutGroup(
+              name: entry.key,
+              exercisesInWorkout: entry.value,
+            ))
+        .toList();
+
+    print("Grouped ${workoutGroups.length} workouts");
+    return workoutGroups;
+  }
+
+
   Future<Workout?> getWorkout(int id) async {
     final db = await DatabaseHelper.instance.database;
 
