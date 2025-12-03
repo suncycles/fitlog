@@ -20,12 +20,6 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     
     print('Database path: $path');
-     
-    // Force delete existing database: use if urs is bugging
-    // if (await databaseExists(path)) {
-    //     print('Deleting existing database...');
-    //     await deleteDatabase(path);
-    // }
     
     final exists = await databaseExists(path);
     print('Database exists: $exists');
