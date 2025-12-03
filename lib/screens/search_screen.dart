@@ -226,10 +226,43 @@ Includes:
 - image
 - "Browse All" button to go to ExerciseListScreen.
 */
-class _PrimaryMuscleCard extends StatelessWidget {
+class _PrimaryMuscleCard extends StatefulWidget {
   const _PrimaryMuscleCard({super.key, required this.primaryMuscle});
 
   final String primaryMuscle;
+
+  @override
+  State<_PrimaryMuscleCard> createState() => _PrimaryMuscleCardState();
+}
+
+class _PrimaryMuscleCardState extends State<_PrimaryMuscleCard> {
+  int? _exerciseCount;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExerciseCount();
+  }
+
+  /*
+  Loads the number of exercises of the primary muscles.
+
+  Args:
+    None
+
+  Returns:
+    Future<void>
+  */
+  Future<void> _loadExerciseCount() async {
+    final db = WorkoutDatabase.instance;
+    final count = await db.getExerciseCountForPrimaryMuscle(widget.primaryMuscle);
+    if(!mounted) return;
+    setState(() {
+      _exerciseCount = count;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -250,15 +283,17 @@ class _PrimaryMuscleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  primaryMuscle,
+                  widget.primaryMuscle,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  '# of exercises',
+                Text(
+                  _isLoading
+                      ? '# of exercises'
+                      : '${_exerciseCount ?? 0} exercises found',
                   style: TextStyle(fontSize: 14),
                 ),
               ],
@@ -286,7 +321,7 @@ class _PrimaryMuscleCard extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
-                          ExerciseListScreen(primaryMuscle: primaryMuscle),
+                          ExerciseListScreen(primaryMuscle: widget.primaryMuscle),
                     ),
                   );
                 },
