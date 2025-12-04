@@ -4,9 +4,8 @@ import '../class/database_helper.dart';
 import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
 import 'view_workout_single_screen.dart';
-import 'exercise_list_screen.dart';
 import 'create_workout_screen.dart';
-
+import 'exercise_view_screen.dart';
 
 class WorkoutsListScreen extends StatefulWidget {
   const WorkoutsListScreen({super.key});
@@ -24,24 +23,7 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
   void initState() {
     super.initState();
     loadWorkouts();
-    //testWorkout();
   }
-
-
-  /*
-  // Test to add exercises into workout
-  Future<void> testWorkout() async {
-    final db = await DatabaseHelper.instance.database;
-
-    await WorkoutDatabase.instance.createWorkout(Workout(id: null, name: 'Test Workout 2', exerciseId: 1, sets: 3),
-    );
-    await WorkoutDatabase.instance.createWorkout(Workout(id: null, name: 'Test Workout 2', exerciseId: 2, sets: 4),
-    );
-    await WorkoutDatabase.instance.createWorkout(Workout(id: null, name: 'Test Workout 2', exerciseId: 3, sets: 5),
-    );
-    await loadWorkouts();
-  }
-  */
 
   Future<void> loadWorkouts() async {
     try {
@@ -50,19 +32,18 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
         errorMessage = null;
       });
 
-      final db = await DatabaseHelper.instance.database;
-
-      List<WorkoutGroup> workoutGroup = await WorkoutDatabase.instance.getGroupedWorkouts();
+      // Load workouts from db
+      List<WorkoutGroup> workoutGroups = 
+          await WorkoutDatabase.instance.getGroupedWorkouts();
 
       setState(() {
-        workouts = workoutGroup;
+        workouts = workoutGroups;
         isLoading = false;
       });
+      
       print("Loaded ${workouts.length} workouts");
-    }
-
-    catch (e, stack) {
-      print ("Error loading workouts: $e");
+    } catch (e, stack) {
+      print("Error loading workouts: $e");
       print(stack);
 
       setState(() {
@@ -72,11 +53,104 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
     }
   }
 
+  Future<void> _deleteWorkout(WorkoutGroup workoutGroup) async {
+    // Show confirmation dialog
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Workout'),
+        content: Text(
+          'Delete "${workoutGroup.name}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      // Delete all exercises in this workout group
+      for (var workout in workoutGroup.exercisesInWorkout) {
+        if (workout.id != null) {
+          await WorkoutDatabase.instance.deleteWorkout(workout.id!);
+        }
+      }
+
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Deleted "${workoutGroup.name}"'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // reload workouts
+      loadWorkouts();
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting workout: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _startWorkout(WorkoutGroup workoutGroup) async {
+    if (workoutGroup.exercisesInWorkout.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This workout has no exercises')),
+      );
+      return;
+    }
+
+    // Navigate to the first exercise
+    final firstWorkout = workoutGroup.exercisesInWorkout.first;
+    final exercise = await WorkoutDatabase.instance.getExercise(
+      firstWorkout.exerciseId,
+    );
+
+    if (exercise == null || !mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MidWorkoutExerciseScreen(
+          workoutId: firstWorkout.id ?? 0,
+          exerciseId: exercise.id ?? 0,
+          exerciseName: exercise.name,
+          previousWeight: null,
+          previousRepetitions: null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Workouts"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: loadWorkouts,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -84,32 +158,56 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
           child: Column(
             children: [
               Expanded(
-                child: errorMessage != null ? 
-                _ErrorView(errorMessage!): 
-                    workouts.isEmpty
-                        ? const _EmptyView(): 
-                        ListView.builder(
-                            itemCount: workouts.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _WorkoutCard(workout: workouts[index]),
-                              );
-                            },
-                        ),
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : errorMessage != null
+                        ? _ErrorView(
+                            errorMessage!,
+                            onRetry: loadWorkouts,
+                          )
+                        : workouts.isEmpty
+                            ? const _EmptyView()
+                            : ListView.builder(
+                                itemCount: workouts.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _WorkoutCard(
+                                      workout: workouts[index],
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SingleWorkoutScreen(
+                                              workoutGroup: workouts[index],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      onStart: () => _startWorkout(workouts[index]),
+                                      onDelete: () => _deleteWorkout(workouts[index]),
+                                    ),
+                                  );
+                                },
+                              ),
               ),
-              // Green Create New Workout button at the bottom
+              // Create New Workout button
               _CreateWorkoutCard(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const CreateWorkoutScreen(),
                     ),
                   );
+                  
+                  // Reload
+                  if (result == true) {
+                    loadWorkouts();
+                  }
                 },
               ),
-
             ],
           ),
         ),
@@ -123,30 +221,45 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text("No workouts found",
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "No workouts yet",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Create your first workout to get started!",
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _WorkoutCard extends StatelessWidget {
-  const _WorkoutCard({super.key, required this.workout});
+  const _WorkoutCard({
+    super.key,
+    required this.workout,
+    required this.onTap,
+    required this.onStart,
+    required this.onDelete,
+  });
 
   final WorkoutGroup workout;
+  final VoidCallback onTap;
+  final VoidCallback onStart;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) =>  SingleWorkoutScreen(workoutGroup: workout,),
-          ),
-        );
-        debugPrint("Tapped workout: ${workout.name}");
-      },
-
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -156,22 +269,48 @@ class _WorkoutCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Workout name
-            Text(
-              workout.name ?? "Unnamed Workout",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+            // Workout name and delete button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    workout.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: onDelete,
+                  tooltip: 'Delete workout',
+                ),
+              ],
             ),
             const SizedBox(height: 8),
 
             // Number of exercises
             Text(
-              "${workout.exercisesInWorkout.length} exercises",
+              "${workout.exercisesInWorkout.length} exercise${workout.exercisesInWorkout.length != 1 ? 's' : ''}",
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Start Workout button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onStart,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[400],
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Start Workout'),
               ),
             ),
           ],
@@ -198,13 +337,20 @@ class _CreateWorkoutCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
         ),
         child: const Center(
-          child: Text(
-            "Create New Workout",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                "Create New Workout",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -212,19 +358,37 @@ class _CreateWorkoutCard extends StatelessWidget {
   }
 }
 
-
 class _ErrorView extends StatelessWidget {
-  const _ErrorView(this.message);
+  const _ErrorView(this.message, {required this.onRetry});
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize:18),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          const Text(
+            'Error loading workouts',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }
