@@ -57,7 +57,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     super.dispose();
   }
 
-  // ================== Data loading ==================
 
   Future<void> _loadPrimaryMuscles() async {
     setState(() => isLoadingMuscles = true);
@@ -114,7 +113,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
   }
 
-  // ================== Helpers ==================
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +146,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     return true;
   }
 
-  // ================== Add exercise to workout list ==================
 
   void _addExerciseToWorkout() {
     if (!_validateCurrentExerciseSelection()) return;
@@ -170,7 +167,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     });
   }
 
-  // ================== Save workout (Done button) ==================
 
   Future<void> _saveWorkout() async {
     if (isSaving) return;
@@ -218,7 +214,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
   }
 
-  // ================== UI ==================
 
   @override
   Widget build(BuildContext context) {

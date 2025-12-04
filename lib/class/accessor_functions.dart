@@ -176,15 +176,18 @@ class WorkoutDatabase {
     );
   }
 
-  Future<int> createExerciseHistory(ExerciseHistory history) async {
-    final db = await DatabaseHelper.instance.database;
+Future<int> createExerciseHistory(ExerciseHistory history) async {
+  final db = await DatabaseHelper.instance.database;
 
-    if (history.id != null) {
-      return await db.insert('exercise_history', history.toJson());
-    } else {
-      return 0;
-    }
-  }
+  // Start from the JSON map
+  final data = history.toJson();
+
+  // Let SQLite auto-generate history_id if it's null
+  data.remove('history_id');
+
+  return await db.insert('exercise_history', data);
+}
+
 
   Future<void> close() async {
     final db = _database;
