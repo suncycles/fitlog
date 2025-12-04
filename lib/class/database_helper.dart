@@ -20,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     
     print('Database path: $path');
-    
+   
     final exists = await databaseExists(path);
     print('Database exists: $exists');
     
