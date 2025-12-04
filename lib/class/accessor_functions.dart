@@ -77,6 +77,21 @@ class WorkoutDatabase {
     return maps.map((map) => ExerciseHistory.fromJson(map)).toList();
   }
 
+  Future<int> getExerciseCountForPrimaryMuscle(String primaryMuscle) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final List<Map<String, Object?>> rows = await db.rawQuery(
+      'SELECT COUNT(*) AS cnt FROM exercise_list WHERE primary_muscles = ?',
+      [primaryMuscle],
+    );
+
+    if (rows.isEmpty) return 0;
+    final Object? value = rows.first['cnt'];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return 0;
+  }
+
   Future<List<Workout>> getWorkouts() async {
     final db = await DatabaseHelper.instance.database;
 

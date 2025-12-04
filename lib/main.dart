@@ -3,7 +3,6 @@ import 'package:fitlog/screens/view_workouts_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitlog/screens/home_screen.dart';
 import 'db_test.dart';
-import 'package:fitlog/screens/create_workout_screen.dart';
 
 void main() {
   runApp(const MyApp());

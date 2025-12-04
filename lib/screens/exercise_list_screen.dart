@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
 import '../class/database_helper.dart';
+import '../screens/view_workouts_list_screen.dart';
+import '../class/workout_class.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   const ExerciseListScreen({super.key, required this.primaryMuscle});
@@ -172,9 +174,57 @@ class _ExerciseCard extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                // TODO: connect to workout builder later
-                debugPrint('Add ${exercise.name} to a workout');
+              onPressed: () async {
+                // Go to WorkoutsListScreen to select a workout
+                final String? selectedWorkout = await Navigator.push<String>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WorkoutsListScreen(),
+                  ),
+                );
+
+                // If the user do not select or click on back button, do nothing
+                if (selectedWorkout == null || selectedWorkout.isEmpty) {
+                  return;
+                }
+
+                // Add the exercise to the selected workout
+                try {
+                  final db = WorkoutDatabase.instance;
+                  const int defaultSets = 3;
+
+                  if (exercise.id == null) {
+                    debugPrint('Exercise id is null, cannot save to workout.');
+                    return;
+                  }
+
+                  final workoutRow = Workout(
+                    id: null,
+                    name: selectedWorkout,
+                    exerciseId: exercise.id!,
+                    sets: defaultSets,
+                  );
+                  await db.createWorkout(workoutRow);
+
+                  // Successfully added
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Added "${exercise.name}" to "$selectedWorkout"',
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to add exercise: $e'),
+                      ),
+                    );
+                  }
+                }
               },
               child: const Text('Add to workout'),
             ),
