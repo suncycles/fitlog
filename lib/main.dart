@@ -1,4 +1,5 @@
 import 'package:fitlog/class/workout_class.dart';
+import 'package:fitlog/screens/first_pickup.dart';
 import 'package:fitlog/screens/view_workouts_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitlog/screens/home_screen.dart';
