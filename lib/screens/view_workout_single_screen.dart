@@ -3,7 +3,7 @@ import '../class/accessor_functions.dart';
 import '../class/database_helper.dart';
 import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
-import 'exercise_view_screen.dart';
+import 'mid_workout_exercise_screen.dart';
 
 class SingleWorkoutScreen extends StatefulWidget {
   final WorkoutGroup workoutGroup; // The selected workout

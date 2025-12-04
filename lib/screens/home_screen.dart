@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'view_workouts_list_screen.dart';
-//import 'exercise_progress_screen.dart';
-//import 'recent_session_screen.dart';
 import 'search_screen.dart';
 import 'recent_session_screen.dart';
 import 'exercise_progress_screen.dart';
