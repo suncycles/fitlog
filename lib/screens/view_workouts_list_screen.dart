@@ -8,7 +8,14 @@ import 'create_workout_screen.dart';
 import 'exercise_view_screen.dart';
 
 class WorkoutsListScreen extends StatefulWidget {
-  const WorkoutsListScreen({super.key});
+  const WorkoutsListScreen({
+    super.key,
+    this.selectMode = false,
+  });
+
+  // If true, selecting a workout will return it to the previous screen
+  // instead of navigating to the SingleWorkoutScreen.
+  final bool selectMode;
 
   @override
   State<WorkoutsListScreen> createState() => _WorkoutsListScreenState();
@@ -174,16 +181,21 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: _WorkoutCard(
                                       workout: workouts[index],
+                                      selectMode: widget.selectMode,
                                       onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                SingleWorkoutScreen(
-                                              workoutGroup: workouts[index],
+                                        if (widget.selectMode) {
+                                          // Return the selected workout to previous screen
+                                          Navigator.pop(context, workouts[index]);
+                                        } else {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => SingleWorkoutScreen(
+                                                workoutGroup: workouts[index],
+                                              ),
                                             ),
-                                          ),
-                                        );
+                                          );
+                                        }
                                       },
                                       onStart: () => _startWorkout(workouts[index]),
                                       onDelete: () => _deleteWorkout(workouts[index]),
@@ -249,12 +261,14 @@ class _WorkoutCard extends StatelessWidget {
     required this.onTap,
     required this.onStart,
     required this.onDelete,
+    this.selectMode = false,
   });
 
   final WorkoutGroup workout;
   final VoidCallback onTap;
   final VoidCallback onStart;
   final VoidCallback onDelete;
+  final bool selectMode;
 
   @override
   Widget build(BuildContext context) {
@@ -302,17 +316,18 @@ class _WorkoutCard extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Start Workout button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onStart,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[400],
-                  foregroundColor: Colors.white,
+            if(!selectMode)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onStart,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[400],
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Start Workout'),
                 ),
-                child: const Text('Start Workout'),
               ),
-            ),
           ],
         ),
       ),

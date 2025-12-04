@@ -175,56 +175,48 @@ class _ExerciseCard extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
+                if(exercise.id == null){
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('This exercise is not in the database.'),
+                    ),
+                  );
+                  return;
+                }
+
                 // Go to WorkoutsListScreen to select a workout
-                final String? selectedWorkout = await Navigator.push<String>(
+                final selectedWorkout = await Navigator.push<WorkoutGroup>(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => WorkoutsListScreen(),
+                    builder: (_) => const WorkoutsListScreen(selectMode: true),
                   ),
                 );
 
                 // If the user do not select or click on back button, do nothing
-                if (selectedWorkout == null || selectedWorkout.isEmpty) {
+                if (selectedWorkout == null) {
                   return;
                 }
 
                 // Add the exercise to the selected workout
-                try {
-                  final db = WorkoutDatabase.instance;
-                  const int defaultSets = 3;
+                const int defaultSets = 3;
 
-                  if (exercise.id == null) {
-                    debugPrint('Exercise id is null, cannot save to workout.');
-                    return;
-                  }
+                final workoutRow = Workout(
+                  id: null,
+                  name: selectedWorkout.name,
+                  exerciseId: exercise.id!,
+                  sets: defaultSets,
+                );
+                await WorkoutDatabase.instance.createWorkout(workoutRow);
 
-                  final workoutRow = Workout(
-                    id: null,
-                    name: selectedWorkout,
-                    exerciseId: exercise.id!,
-                    sets: defaultSets,
-                  );
-                  await db.createWorkout(workoutRow);
-
-                  // Successfully added
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Added "${exercise.name}" to "$selectedWorkout"',
-                        ),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to add exercise: $e'),
-                      ),
-                    );
-                  }
-                }
+                // Successfully added
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Added "${exercise.name}" to workout "${selectedWorkout.name}"',
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               },
               child: const Text('Add to workout'),
             ),
