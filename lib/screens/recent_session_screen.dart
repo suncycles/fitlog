@@ -1,28 +1,83 @@
 import 'package:flutter/material.dart';
 
-// adjust paths if your folders are different
 import '../class/accessor_functions.dart';
 import '../class/history_class.dart';
+import '../class/workout_class.dart';
+
+/// Simple view model for displaying recent history rows.
+class _RecentHistoryDisplay {
+  final String workoutName;
+  final int exerciseId;
+  final DateTime date;
+  final List<String> sets;
+  final String? notes;
+
+  _RecentHistoryDisplay({
+    required this.workoutName,
+    required this.exerciseId,
+    required this.date,
+    required this.sets,
+    this.notes,
+  });
+}
 
 class RecentSessionScreen extends StatelessWidget {
   const RecentSessionScreen({super.key});
 
-  /// Load the most recent workout session from the history table.
-  Future<List<ExerciseHistory>> _loadRecentSession() async {
+  /// Load the most recent workout session across *all* workouts.
+  Future<List<_RecentHistoryDisplay>> _loadRecentSession() async {
     final db = WorkoutDatabase.instance;
-    final allHistory = await db.getExerciseHistory(0);
+
+    // 1. Get all workouts
+    final List<Workout> workouts = await db.getWorkouts();
+    if (workouts.isEmpty) return [];
+
+    // Map workoutId -> workoutName
+    final Map<int, String> workoutNamesById = {};
+    for (final w in workouts) {
+      if (w.id != null) {
+        workoutNamesById[w.id!] = w.name;
+      }
+    }
+
+    // 2. Gather history entries for each workout
+    final List<ExerciseHistory> allHistory = [];
+    for (final workout in workouts) {
+      final workoutId = workout.id;
+      if (workoutId == null) continue;
+
+      final historyForWorkout = await db.getExerciseHistory(workoutId);
+      allHistory.addAll(historyForWorkout);
+    }
 
     if (allHistory.isEmpty) return [];
 
-    // newest first
+    // 3. Sort by date (newest first)
     allHistory.sort((a, b) => b.date.compareTo(a.date));
-    final latestDate = allHistory.first.date;
+    final DateTime latestDate = allHistory.first.date;
 
     bool isSameDay(DateTime a, DateTime b) =>
         a.year == b.year && a.month == b.month && a.day == b.day;
 
-    // keep only entries from the most recent day
-    return allHistory.where((h) => isSameDay(h.date, latestDate)).toList();
+    // 4. Keep only entries from the most recent day
+    final List<ExerciseHistory> latestDayHistory =
+        allHistory.where((h) => isSameDay(h.date, latestDate)).toList();
+
+    // 5. Convert to display objects
+    final List<_RecentHistoryDisplay> displayRows = latestDayHistory.map((h) {
+      final workoutName =
+          workoutNamesById[h.workoutId] ?? 'Workout #${h.workoutId}';
+
+      return _RecentHistoryDisplay(
+        workoutName: workoutName,
+        exerciseId: h.exerciseId,
+        date: h.date,
+        sets: h.sets,
+        notes: h.notes,
+      );
+    }).toList();
+
+    return displayRows;
   }
 
   @override
@@ -32,7 +87,7 @@ class RecentSessionScreen extends StatelessWidget {
         title: const Text('Recent Session'),
         centerTitle: true,
       ),
-      body: FutureBuilder<List<ExerciseHistory>>(
+      body: FutureBuilder<List<_RecentHistoryDisplay>>(
         future: _loadRecentSession(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,23 +100,24 @@ class RecentSessionScreen extends StatelessWidget {
             );
           }
 
-          final historyEntries = snapshot.data ?? [];
-
-          if (historyEntries.isEmpty) {
+          final entries = snapshot.data ?? [];
+          if (entries.isEmpty) {
             return const Center(
               child: Text('No workout history yet.'),
             );
           }
 
-          final workoutName =
-              historyEntries.first.workoutName ?? 'Most Recent Workout';
+          final String sessionWorkoutName = entries.first.workoutName;
+          final DateTime sessionDate = entries.first.date;
+          final String sessionDateText =
+              '${sessionDate.year}-${sessionDate.month.toString().padLeft(2, '0')}-${sessionDate.day.toString().padLeft(2, '0')}';
 
           return Padding(
             padding: const EdgeInsets.all(20.0),
             child: ListView(
               children: [
                 Text(
-                  workoutName,
+                  '$sessionWorkoutName ($sessionDateText)',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -69,12 +125,9 @@ class RecentSessionScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // each history row
-                ...historyEntries.map((exercise) {
-                  final name = exercise.exerciseName ?? 'Exercise';
-                  final weight = exercise.weight;
-                  final setCount = exercise.sets.length;
-                  final reps = exercise.reps;
+                ...entries.map((entry) {
+                  final String setsSummary =
+                      entry.sets.isEmpty ? '-' : entry.sets.join(', ');
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -82,16 +135,24 @@ class RecentSessionScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$name:  Weight: ${weight ?? '-'} lbs',
+                          'Exercise ID: ${entry.exerciseId}',
                           style: const TextStyle(fontSize: 18),
                         ),
                         Text(
-                          '$setCount sets of ${reps ?? '-'} reps',
+                          'Sets: $setsSummary',
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.black54,
                           ),
                         ),
+                        if (entry.notes != null && entry.notes!.isNotEmpty)
+                          Text(
+                            'Notes: ${entry.notes}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black45,
+                            ),
+                          ),
                       ],
                     ),
                   );
