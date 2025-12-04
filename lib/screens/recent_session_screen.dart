@@ -28,11 +28,11 @@ class RecentSessionScreen extends StatelessWidget {
   Future<List<_RecentHistoryDisplay>> _loadRecentSession() async {
     final db = WorkoutDatabase.instance;
 
-    // 1. Get all workouts
+    
     final List<Workout> workouts = await db.getWorkouts();
     if (workouts.isEmpty) return [];
 
-    // Map workoutId -> workoutName
+    
     final Map<int, String> workoutNamesById = {};
     for (final w in workouts) {
       if (w.id != null) {
@@ -40,7 +40,7 @@ class RecentSessionScreen extends StatelessWidget {
       }
     }
 
-    // 2. Gather history entries for each workout
+   
     final List<ExerciseHistory> allHistory = [];
     for (final workout in workouts) {
       final workoutId = workout.id;
@@ -52,18 +52,19 @@ class RecentSessionScreen extends StatelessWidget {
 
     if (allHistory.isEmpty) return [];
 
-    // 3. Sort by date (newest first)
+   
     allHistory.sort((a, b) => b.date.compareTo(a.date));
     final DateTime latestDate = allHistory.first.date;
 
     bool isSameDay(DateTime a, DateTime b) =>
         a.year == b.year && a.month == b.month && a.day == b.day;
 
-    // 4. Keep only entries from the most recent day
+    
     final List<ExerciseHistory> latestDayHistory =
         allHistory.where((h) => isSameDay(h.date, latestDate)).toList();
 
-    // 5. Convert to display objects
+    
+    
     final List<_RecentHistoryDisplay> displayRows = latestDayHistory.map((h) {
       final workoutName =
           workoutNamesById[h.workoutId] ?? 'Workout #${h.workoutId}';
