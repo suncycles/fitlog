@@ -1,339 +1,225 @@
 import 'package:flutter/material.dart';
+import '../screens/view_workouts_list_screen.dart'; 
+import '../class/workout_class.dart';
+import '../class/accessor_functions.dart'; // Contains WorkoutDatabase
+import '../class/exercise_class.dart'; // Contains Exercise class
 
-import '../class/accessor_functions.dart';
-import '../class/history_class.dart';
-
-class MidWorkoutExerciseScreen extends StatefulWidget {
-  final int workoutId;
+class ExerciseViewScreen extends StatefulWidget {
   final int exerciseId;
   final String exerciseName;
 
-  final int? previousWeight;               // last used weight
-  final List<int>? previousRepetitions;    // last reps for each set
-
-  const MidWorkoutExerciseScreen({
+  const ExerciseViewScreen({
     super.key,
-    required this.workoutId,
     required this.exerciseId,
     required this.exerciseName,
-    this.previousWeight,
-    this.previousRepetitions,
   });
 
   @override
-  State<MidWorkoutExerciseScreen> createState() =>
-      _MidWorkoutExerciseScreenState();
+  State<ExerciseViewScreen> createState() => _ExerciseViewScreenState();
 }
 
-class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
-  static const int maxSupportedSets = 10;
-
-  final TextEditingController weightInputController = TextEditingController();
-  final TextEditingController setCountController = TextEditingController();
-
-  final List<TextEditingController> repetitionControllers = [];
-
-  bool isSaving = false;
-
+class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
+  Exercise? _exerciseDetails;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _fetchExerciseDetails();
+  }
 
-    setCountController.text = '3';     // default sets: 3
-    _initializeRepetitionFields(3);
+  // --- Data Fetching Logic ---
+  Future<void> _fetchExerciseDetails() async {
+    try {
+      final details = await WorkoutDatabase.instance.getExercise(widget.exerciseId);
+      setState(() {
+        _exerciseDetails = details;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load exercise details: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
-    if (widget.previousWeight != null) {
-      weightInputController.text = widget.previousWeight.toString();
+  // --- Core Function: Add Exercise to Workout ---
+  Future<void> _addExerciseToWorkout(BuildContext context) async {
+    final selectedWorkout = await Navigator.push<WorkoutGroup>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const WorkoutsListScreen(selectMode: true), 
+      ),
+    );
+
+    if (selectedWorkout == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Workout selection cancelled.'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
+    const int defaultSets = 3;
+
+    final workoutRow = Workout(
+      id: null,
+      name: selectedWorkout.name,
+      exerciseId: widget.exerciseId, 
+      sets: defaultSets,
+    );
+    
+    await WorkoutDatabase.instance.createWorkout(workoutRow);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Added "${widget.exerciseName}" to workout "${selectedWorkout.name}"',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
   @override
-  void dispose() {
-    weightInputController.dispose();
-    setCountController.dispose();
-    for (final controller in repetitionControllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-   void _showSnackMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.exerciseName),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _buildBody(context),
     );
   }
 
-  void _initializeRepetitionFields(int count) {
-    for (final controller in repetitionControllers) {
-      controller.dispose();
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    repetitionControllers
-      ..clear()
-      ..addAll(List.generate(count, (_) => TextEditingController()));
-
-    setState(() {});
-  }
-
-  void _handleSetCountChanged(String value) {
-    final parsed = int.tryParse(value);
-    if (parsed == null || parsed <= 0) return;
-
-    final adjustedCount = parsed.clamp(1, maxSupportedSets);
-    _initializeRepetitionFields(adjustedCount);
-  }
-
-  Future<void> _saveExerciseHistory() async {
-    if (isSaving) return;
-
-    //Validate Weight 
-
-    final weightText = weightInputController.text.trim();
-    if (weightText.isEmpty) {
-      _showSnackMessage('Please enter a weight');
-      return;
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!));
     }
 
-    final parsedWeight = int.tryParse(weightText);
-    if (parsedWeight == null) {
-      _showSnackMessage('Weight must be a number');
-      return;
+    if (_exerciseDetails == null) {
+      return const Center(child: Text('Exercise details not found.'));
     }
 
-    // Validate Repetitions
-    final enteredReps = repetitionControllers
-        .map((c) => c.text.trim())
-        .where((value) => value.isNotEmpty)
-        .toList();
+    // Assuming Exercise class has these fields:
+    final String primaryMuscle = _exerciseDetails!.primaryMuscles ?? 'N/A';
+    final String secondaryMuscles = _exerciseDetails!.secondaryMuscles ?? 'N/A';
+    final String equipment = _exerciseDetails!.equipment ?? 'N/A';
+    final String instructions = _exerciseDetails!.instructions ?? 'No detailed instructions available.';
 
-    if (enteredReps.isEmpty) {
-      _showSnackMessage('Please enter repetitions');
-      return;
-    }
-
-
-    final formattedSets = <String>[
-      for (final reps in enteredReps) '${parsedWeight}x$reps'
-    ];
-
-    
-
-    setState(() => isSaving = true);
-
-    try {
-      await WorkoutDatabase.instance.createExerciseHistory(
-        ExerciseHistory(
-          id: null,
-          workoutId: widget.workoutId,
-          exerciseId: widget.exerciseId,
-          date: DateTime.now(),
-          sets: formattedSets,
-          notes: null,
-
-          // UI only fields
-          exerciseName: widget.exerciseName,
-          workoutName: null,
-          weight: parsedWeight,
-          reps: int.tryParse(enteredReps.first),
-        ),
-      );
-
-      if (!mounted) return;
-
-      _showSnackMessage('Saved to history');
-      Navigator.pop(context, true);
-
-    } catch (error) {
-      if (!mounted) return;
-      _showSnackMessage('Error saving: $error');
-
-    } finally {
-      if (mounted) {
-        setState(() => isSaving = false);
-      }
-    }
-  }
-  @override
-  Widget build(BuildContext context) {
-    final previousWeightText =
-        widget.previousWeight != null ? '${widget.previousWeight} lbs' : 'N/A';
-
-    final previousRepetitionText =
-        (widget.previousRepetitions != null &&
-                widget.previousRepetitions!.isNotEmpty)
-            ? widget.previousRepetitions!.join(', ')
-            : 'N/A';
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Back'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView(
+        children: [
+          // Exercise Demonstration Area
+          Container(
+            height: 250,
+            width: double.infinity,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.blueGrey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blueGrey.shade200),
+            ),
             child: const Text(
-              'Skip For Now',
-              style: TextStyle(color: Colors.red),
+              'High-Resolution Exercise Demonstration Video/GIF',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
             ),
           ),
-        ],
-        automaticallyImplyLeading: false,
-      ),
+          
+          const SizedBox(height: 24),
+          
+          // --- Dynamic Muscle Group and Equipment Info ---
+          _buildDetailRow(
+            icon: Icons.fitness_center,
+            label: 'Primary Muscle',
+            value: primaryMuscle,
+          ),
+          _buildDetailRow(
+            icon: Icons.line_weight,
+            label: 'Secondary Muscles',
+            value: secondaryMuscles,
+          ),
+          _buildDetailRow(
+            icon: Icons.build,
+            label: 'Equipment Needed',
+            value: equipment,
+          ),
+          
+          const SizedBox(height: 24),
 
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: ListView(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.blue[100],
-              child: Text(
-                widget.exerciseName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          // Exercise Details Section
+          const Text(
+            'Instructions:',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            instructions,
+            style: const TextStyle(fontSize: 16),
+          ),
 
-            const SizedBox(height: 16),
+          const SizedBox(height: 40),
 
-            
-            Container(
-              height: 150,
-              alignment: Alignment.center,
-              color: Colors.pink[100],
-              child: const Text(
-                '[Exercise Demonstration]',
+          // Add to Workout Button
+          SizedBox(
+            height: 50,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text(
+                'Add to an Existing Workout',
                 style: TextStyle(fontSize: 16),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Text(
-              'Previous Weight: $previousWeightText',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text(
-                  'Weight (lbs): ',
-                  style: TextStyle(fontSize: 16),
+              onPressed: () => _addExerciseToWorkout(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                Expanded(
-                  child: TextField(
-                    controller: weightInputController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'enter weight',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                const Text(
-                  'Number of sets: ',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(
-                  width: 80,
-                  child: TextField(
-                    controller: setCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: '# sets',
-                    ),
-                    onChanged: _handleSetCountChanged,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            
-            const Text(
-              'Repetitions:',
-              style: TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 4),
-
-            Text(
-              'Previous Repetitions for current weight: $previousRepetitionText',
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
-            ),
-
-            const SizedBox(height: 14),
-
-            
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (int i = 0; i < repetitionControllers.length; i++)
-                  SizedBox(
-                    width: 90,
-                    child: TextField(
-                      controller: repetitionControllers[i],
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText: 'Set ${i + 1}',
-                        hintText: 'reps',
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSaving ? null : _saveExerciseHistory,
-                child: isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Next Exercise'),
               ),
             ),
-          ],
-        ),
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workouts',
           ),
         ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.popUntil(context, (route) => route.isFirst);
-          }
-        },
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({required IconData icon, required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.blue, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            '$label:',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

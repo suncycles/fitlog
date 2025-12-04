@@ -5,7 +5,7 @@ import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
 import 'view_workout_single_screen.dart';
 import 'create_workout_screen.dart';
-import 'exercise_view_screen.dart';
+import 'mid_workout_exercise_screen.dart';
 
 class WorkoutsListScreen extends StatefulWidget {
   const WorkoutsListScreen({
@@ -124,19 +124,23 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
       return;
     }
 
-    // Navigate to the first exercise
+    // Get the first exercise in the group
     final firstWorkout = workoutGroup.exercisesInWorkout.first;
+    
+    // fetch exercise details using the exerciseId stored in the workout row
     final exercise = await WorkoutDatabase.instance.getExercise(
       firstWorkout.exerciseId,
     );
 
     if (exercise == null || !mounted) return;
 
+    // Navigate to MidWorkoutExerciseScreen
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MidWorkoutExerciseScreen(
-          workoutId: firstWorkout.id ?? 0,
+         
+          workoutId: firstWorkout.id ?? 0, 
           exerciseId: exercise.id ?? 0,
           exerciseName: exercise.name,
           previousWeight: null,
@@ -144,7 +148,7 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
         ),
       ),
     );
-  }
+}
 
   @override
   Widget build(BuildContext context) {
