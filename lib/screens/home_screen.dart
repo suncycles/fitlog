@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'view_workouts_list_screen.dart';
-//import 'exercise_progress_screen.dart';
-//import 'recent_session_screen.dart';
+import 'first_pickup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'search_screen.dart';
 import 'recent_session_screen.dart';
 import 'exercise_progress_screen.dart';
@@ -15,12 +15,46 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String _userName = 'Joe';
 
-  final List<Widget> _screens = [
-    const _HomepagePanel(),
-    const SearchScreen(),
-    const WorkoutsListScreen(),
-  ];
+  List<Widget> get _screens => [
+        _HomepagePanel(userName: _userName),
+        const SearchScreen(),
+        const WorkoutsListScreen(),
+      ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString('user_name');
+    
+    if (stored != null && stored.isNotEmpty) {
+      if (mounted) {
+        setState(() => _userName = stored);
+      }
+      return;
+    }
+
+    // No stored name - show first-time pickup form
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final name = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute(builder: (_) => const FirstPickUp()),
+      );
+      
+      if (name != null && name.isNotEmpty) {
+        await prefs.setString('user_name', name);
+        if (mounted) {
+          setState(() => _userName = name);
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _selectedIndex,
         children: _screens,
       ),
-
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) => setState(() => _selectedIndex = index),
@@ -44,7 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomepagePanel extends StatelessWidget {
-  const _HomepagePanel();
+  final String userName;
+
+  const _HomepagePanel({required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +92,9 @@ class _HomepagePanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Welcome Back,\nJoe',
-              style: TextStyle(
+            Text(
+              'Welcome Back,\n$userName',
+              style: const TextStyle(
                 fontSize: 34,
                 fontWeight: FontWeight.w600,
                 height: 1.15,
@@ -67,7 +102,7 @@ class _HomepagePanel extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            //Start Workout
+            // Start Workout Button
             InkWell(
               onTap: () {
                 Navigator.push(
@@ -95,7 +130,7 @@ class _HomepagePanel extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            //View Progress
+            // View Progress Button
             InkWell(
               onTap: () {
                 Navigator.push(
@@ -123,7 +158,7 @@ class _HomepagePanel extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // Recent Session
+            // Recent Session Button
             InkWell(
               onTap: () {
                 Navigator.push(
