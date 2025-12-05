@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'LiftLog',
-      home: RootScreen(), // <-- Start here!
+      home: RootScreen(), // Show Root screen, will be either first pikcup or home
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
-import '../class/database_helper.dart';
 import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
 import 'mid_workout_exercise_screen.dart';
@@ -46,12 +45,7 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
         exercises = fetchedExercises;
         isLoading = false;
       });
-
-      //print("Loaded ${exercises.length} exercises for workout: ${widget.workoutGroup.name}");
-    } catch (e, stack) {
-      //print("Error loading exercises: $e");
-      //print(stack);
-
+    } catch (e) {
       setState(() {
         errorMessage = "Error: $e";
         isLoading = false;
@@ -61,7 +55,6 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
 
   Future<void> startWorkout() async {
   if (exercises.isEmpty) {
-    //print("No exercises available to start this workout.");
     return;
   }
 
@@ -156,7 +149,7 @@ class _ExerciseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            exercise.name ?? 'Unnamed Exercise',
+            exercise.name,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),

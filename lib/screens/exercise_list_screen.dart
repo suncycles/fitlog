@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
-import '../class/database_helper.dart';
 import 'exercise_view_screen.dart';
 
 class ExerciseListScreen extends StatefulWidget {
@@ -29,8 +28,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         isLoading = true;
         errorMessage = null;
       });
-
-      final db = await DatabaseHelper.instance.database; 
 
       List<Exercise?> fetchedExercises = await WorkoutDatabase.instance.getExercises(
         primaryMuscle: widget.primaryMuscle,
@@ -164,7 +161,7 @@ class _ExercisePanel extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ExerciseViewScreen( 
           exerciseId: exercise.id!,
-          exerciseName: exercise.name ?? 'Unknown Exercise',
+          exerciseName: exercise.name,
         ),
       ),
     );
@@ -182,7 +179,7 @@ class _ExercisePanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                exercise.name ?? 'Unknown Exercise',
+                exercise.name,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

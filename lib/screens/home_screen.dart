@@ -4,7 +4,6 @@ import 'view_workouts_list_screen.dart';
 import 'search_screen.dart';
 import 'recent_session_screen.dart';
 import 'exercise_progress_screen.dart';
-import 'first_pickup.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

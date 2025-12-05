@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
 import '../class/workout_class.dart';
@@ -214,9 +213,9 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: TextButton(
+        leading:IconButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('back'),
+          icon: const Icon(Icons.arrow_back),
         ),
         title: const Text('Create New Workout'),
         centerTitle: true,

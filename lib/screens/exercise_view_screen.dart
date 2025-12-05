@@ -115,10 +115,10 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
       return const Center(child: Text('Exercise details not found.'));
     }
 
-    final String primaryMuscle = _exerciseDetails!.primaryMuscles ?? 'N/A';
-    final String secondaryMuscles = _exerciseDetails!.secondaryMuscles ?? 'N/A';
-    final String equipment = _exerciseDetails!.equipment ?? 'N/A';
-    final String instructions = _exerciseDetails!.instructions ?? 'No detailed instructions available.';
+    final String primaryMuscle = _exerciseDetails!.primaryMuscles;
+    final String secondaryMuscles = _exerciseDetails!.secondaryMuscles;
+    final String equipment = _exerciseDetails!.equipment;
+    final String instructions = _exerciseDetails!.instructions;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),

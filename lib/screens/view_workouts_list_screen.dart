@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
-import '../class/database_helper.dart';
 import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
 import 'view_workout_single_screen.dart';

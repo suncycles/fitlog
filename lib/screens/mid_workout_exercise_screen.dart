@@ -181,11 +181,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
     final buttonText = isLastExercise ? "Finish Workout" : "Next Exercise";
     final nextButtonColor = isLastExercise ? Colors.green : Colors.blue;
 
-    final previousWeightText = previousWeight != null ? '$previousWeight lbs' : 'N/A';
-    final previousRepetitionText = (previousRepetitions != null && previousRepetitions!.isNotEmpty)
-            ? previousRepetitions!.join(', ')
-            : 'N/A';
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Exercise ${widget.currentIndex + 1}/${widget.exercises.length}"), // Helpful title
@@ -211,7 +206,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
               padding: const EdgeInsets.all(12),
               color: Colors.blue[100],
               child: Text(
-                currentExercise.name ?? "Unnamed", // Use object
+                currentExercise.name, 
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,

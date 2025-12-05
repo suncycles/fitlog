@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
-import 'view_workouts_list_screen.dart';
 import 'exercise_list_screen.dart';
 import 'body_screen.dart';
 import '../class/accessor_functions.dart';
@@ -218,7 +216,6 @@ class _PrimaryMuscleCardState extends State<_PrimaryMuscleCard> {
 
   @override
   Widget build(BuildContext context) {
-    const Color cardColor = Color.fromARGB(255, 217, 217, 217);
 
     return Container(
       decoration: BoxDecoration(
