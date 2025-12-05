@@ -4,11 +4,20 @@ import '../class/workout_class.dart';
 import '../class/accessor_functions.dart'; // Contains WorkoutDatabase
 import '../class/exercise_class.dart'; // Contains Exercise class
 
-class ExerciseViewScreen extends StatefulWidget {
+import '../class/accessor_functions.dart';
+import '../class/history_class.dart';
+import '../class/workout_class.dart';
+import '../class/exercise_class.dart';
+
+class MidWorkoutExerciseScreen extends StatefulWidget {
+  final int workoutId;
   final int exerciseId;
   final String exerciseName;
 
-  const ExerciseViewScreen({
+  final int? previousWeight; // last used weight
+  final List<int>? previousRepetitions; // last reps for each set
+
+  const MidWorkoutExerciseScreen({
     super.key,
     required this.exerciseId,
     required this.exerciseName,
@@ -18,15 +27,26 @@ class ExerciseViewScreen extends StatefulWidget {
   State<ExerciseViewScreen> createState() => _ExerciseViewScreenState();
 }
 
-class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
-  Exercise? _exerciseDetails;
-  bool _isLoading = true;
-  String? _errorMessage;
+class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
+  static const int maxSupportedSets = 10;
+
+  final TextEditingController weightInputController = TextEditingController();
+  final TextEditingController setCountController = TextEditingController();
+  final List<TextEditingController> repetitionControllers = [];
+
+  bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchExerciseDetails();
+
+    // default sets: 3
+    setCountController.text = '3';
+    _initializeRepetitionFields(3);
+
+    if (widget.previousWeight != null) {
+      weightInputController.text = widget.previousWeight.toString();
+    }
   }
 
   // --- Data Fetching Logic ---
@@ -45,48 +65,151 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
     }
   }
 
-  // --- Core Function: Add Exercise to Workout ---
-  Future<void> _addExerciseToWorkout(BuildContext context) async {
-    final selectedWorkout = await Navigator.push<WorkoutGroup>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const WorkoutsListScreen(selectMode: true), 
-      ),
+  void _showSnackMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
 
-    if (selectedWorkout == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workout selection cancelled.'),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
+  void _handleSetCountChanged(String value) {
+    final parsed = int.tryParse(value);
+    if (parsed == null || parsed <= 0) return;
+
+    final adjustedCount = parsed.clamp(1, maxSupportedSets);
+    _initializeRepetitionFields(adjustedCount);
+  }
+
+  /// Save this exercise in history, then move to the next exercise (if any).
+  Future<void> _saveExerciseHistory() async {
+    if (isSaving) return;
+
+    // ---- Validate weight ----
+    final weightText = weightInputController.text.trim();
+    if (weightText.isEmpty) {
+      _showSnackMessage('Please enter a weight');
       return;
     }
 
-    const int defaultSets = 3;
+    final parsedWeight = int.tryParse(weightText);
+    if (parsedWeight == null) {
+      _showSnackMessage('Weight must be a number');
+      return;
+    }
 
-    final workoutRow = Workout(
-      id: null,
-      name: selectedWorkout.name,
-      exerciseId: widget.exerciseId, 
-      sets: defaultSets,
-    );
-    
-    await WorkoutDatabase.instance.createWorkout(workoutRow);
+    // ---- Validate repetitions ----
+    final enteredReps = repetitionControllers
+        .map((c) => c.text.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Added "${widget.exerciseName}" to workout "${selectedWorkout.name}"',
-          ),
-          duration: const Duration(seconds: 2),
+    if (enteredReps.isEmpty) {
+      _showSnackMessage('Please enter repetitions');
+      return;
+    }
+
+    // Build "weight x reps" strings, e.g. "200x8"
+    final formattedSets = <String>[
+      for (final reps in enteredReps) '${parsedWeight}x$reps'
+    ];
+
+    setState(() => isSaving = true);
+
+    try {
+      await WorkoutDatabase.instance.createExerciseHistory(
+        ExerciseHistory(
+          id: null,
+          workoutId: widget.workoutId,
+          exerciseId: widget.exerciseId,
+          date: DateTime.now(),
+          sets: formattedSets,
+          notes: null,
+          // optional UI fields – keep if they exist in your model
+          exerciseName: widget.exerciseName,
+          workoutName: null,
+          weight: parsedWeight,
+          reps: int.tryParse(enteredReps.first),
         ),
       );
+
+      if (!mounted) return;
+
+      // After saving, try to move to the next exercise for this workout
+      await _goToNextExercise();
+    } catch (error) {
+      if (!mounted) return;
+      _showSnackMessage('Error saving: $error');
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
     }
+  }
+
+  /// Find the next exercise in this workout and navigate to it.
+  /// If there is no next exercise, just pop back.
+  Future<void> _goToNextExercise() async {
+    final db = WorkoutDatabase.instance;
+
+    
+    final currentWorkout = await db.getWorkout(widget.workoutId);
+    if (currentWorkout == null) {
+      if (mounted) Navigator.pop(context); 
+      return;
+    }
+
+    
+    final groupedWorkouts = await db.getGroupedWorkouts();
+
+    WorkoutGroup? currentGroup;
+    for (final group in groupedWorkouts) {
+      if (group.name == currentWorkout.name) {
+        currentGroup = group;
+        break;
+      }
+    }
+
+    if (currentGroup == null) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    final exercisesInWorkout = currentGroup.exercisesInWorkout;
+    if (exercisesInWorkout.isEmpty) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+
+    final currentIndex =
+        exercisesInWorkout.indexWhere((w) => w.id == currentWorkout.id);
+
+    // If not found or already last exercise -> workout finished
+    if (currentIndex == -1 || currentIndex + 1 >= exercisesInWorkout.length) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    
+    final nextWorkout = exercisesInWorkout[currentIndex + 1];
+
+    // Look up the exercise name from exercise_list
+    final nextExercise = await db.getExercise(nextWorkout.exerciseId);
+    final nextExerciseName = nextExercise?.name ?? 'Exercise';
+
+    if (!mounted) return;
+
+    // 5. Replace this screen with a new mid-workout screen for the next exercise
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MidWorkoutExerciseScreen(
+          workoutId: nextWorkout.id!,
+          exerciseId: nextWorkout.exerciseId,
+          exerciseName: nextExerciseName,
+          previousWeight: null,          
+          previousRepetitions: null,
+        ),
+      ),
+    );
   }
 
   @override
@@ -99,42 +222,96 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _buildBody(context),
-    );
-  }
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: ListView(
+          children: [
+            // Exercise name header
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.blue[100],
+              child: Text(
+                widget.exerciseName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
 
-  Widget _buildBody(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+            const SizedBox(height: 16),
 
-    if (_errorMessage != null) {
-      return Center(child: Text(_errorMessage!));
-    }
+            // Exercise demonstration placeholder
+            Container(
+              height: 150,
+              alignment: Alignment.center,
+              color: Colors.pink[100],
+              child: const Text(
+                '[Exercise Demonstration]',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Previous weight
+            Text(
+              'Previous Weight: $previousWeightText',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+
+            // Weight input
+            Row(
+              children: [
+                const Text(
+                  'Weight (lbs): ',
+                  style: TextStyle(fontSize: 16),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: weightInputController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'enter weight',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Number of sets
+            Row(
+              children: [
+                const Text(
+                  'Number of sets: ',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: setCountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: '# sets',
+                    ),
+                    onChanged: _handleSetCountChanged,
+                  ),
+                ),
+              ],
+            ),
 
     if (_exerciseDetails == null) {
       return const Center(child: Text('Exercise details not found.'));
     }
 
-    // Assuming Exercise class has these fields:
-    final String primaryMuscle = _exerciseDetails!.primaryMuscles ?? 'N/A';
-    final String secondaryMuscles = _exerciseDetails!.secondaryMuscles ?? 'N/A';
-    final String equipment = _exerciseDetails!.equipment ?? 'N/A';
-    final String instructions = _exerciseDetails!.instructions ?? 'No detailed instructions available.';
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
-        children: [
-          // Exercise Demonstration Area
-          Container(
-            height: 250,
-            width: double.infinity,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.blueGrey[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blueGrey.shade200),
+            const Text(
+              'Repetitions:',
+              style: TextStyle(fontSize: 16),
             ),
             child: const Text(
               'High-Resolution Exercise Demonstration Video/GIF',
@@ -174,42 +351,53 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
             style: const TextStyle(fontSize: 16),
           ),
 
-          const SizedBox(height: 40),
+            // Repetition fields
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (int i = 0; i < repetitionControllers.length; i++)
+                  SizedBox(
+                    width: 90,
+                    child: TextField(
+                      controller: repetitionControllers[i],
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: 'Set ${i + 1}',
+                        hintText: 'reps',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
 
-          // Add to Workout Button
-          SizedBox(
-            height: 50,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text(
-                'Add to an Existing Workout',
-                style: TextStyle(fontSize: 16),
-              ),
-              onPressed: () => _addExerciseToWorkout(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+            const SizedBox(height: 28),
+
+            // Next Exercise button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isSaving ? null : _saveExerciseHistory,
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Next Exercise'),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDetailRow({required IconData icon, required String label, required String value}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.blue, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            '$label:',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           const SizedBox(width: 8),
           Expanded(
