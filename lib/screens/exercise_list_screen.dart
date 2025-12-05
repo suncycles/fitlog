@@ -99,7 +99,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     );
   }
 
-  // Helper widgets for build
   Widget _buildErrorWidget(BuildContext context) {
     return Center(
       child: Column(
@@ -145,7 +144,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   }
 }
 
-// Exercise Panel buttons
 class _ExercisePanel extends StatelessWidget {
   const _ExercisePanel({super.key, required this.exercise});
 
@@ -183,7 +181,6 @@ class _ExercisePanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Exercise name
               Text(
                 exercise.name ?? 'Unknown Exercise',
                 style: const TextStyle(

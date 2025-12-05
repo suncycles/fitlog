@@ -28,4 +28,5 @@ class WorkoutGroup {
   final List<Workout> exercisesInWorkout;
 
   WorkoutGroup({this.id, required this.name, required this.exercisesInWorkout});
+
 }

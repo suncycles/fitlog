@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // Import the destination page
+import 'home_screen.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirstPickUp extends StatefulWidget {
   const FirstPickUp({super.key});
@@ -9,7 +10,6 @@ class FirstPickUp extends StatefulWidget {
 }
 
 class _FirstPickUpState extends State<FirstPickUp> {
-  // Text controllers for form inputs
   final TextEditingController nameController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController weightController = TextEditingController();
@@ -149,7 +149,6 @@ class _FirstPickUpState extends State<FirstPickUp> {
               ),
               const SizedBox(height: 40),
 
-              // "I don't know" button
               Center(
                 child: ElevatedButton(
                   onPressed: () {
@@ -165,7 +164,6 @@ class _FirstPickUpState extends State<FirstPickUp> {
 
               const SizedBox(height: 20),
 
-              // ✅ Done button (navigate to HomeScreen)
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -173,15 +171,18 @@ class _FirstPickUpState extends State<FirstPickUp> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 40, vertical: 12),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     // Print entered data for debugging
-                    print('Name: ${nameController.text}');
-                    print('Age: ${ageController.text}');
-                    print('Weight: ${weightController.text} $weightUnit');
-                    print('Fitness: $fitnessLevel');
-                    print('Exercise: $preferredExercise');
+                    //print('Name: ${nameController.text}');
+                    //print('Age: ${ageController.text}');
+                    //print('Weight: ${weightController.text} $weightUnit');
+                    //print('Fitness: $fitnessLevel');
+                    //print('Exercise: $preferredExercise');
 
-                    // Navigate to HomeScreen
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_name', nameController.text.trim());
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(

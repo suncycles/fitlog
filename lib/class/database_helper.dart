@@ -10,48 +10,48 @@ class DatabaseHelper {
     DatabaseHelper._init();
 
     Future<Database> get database async {
-        if (_database != null) return _database!;
-        _database = await _initDB('workoutDB.db');
-        return _database!;
+      if (_database != null) return _database!;
+      _database = await _initDB('workoutDB.db');
+      return _database!;
     }
 
     Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-    
-    print('Database path: $path');
-   
-    final exists = await databaseExists(path);
-    print('Database exists: $exists');
-    
-    if (!exists) {
-        print('Copying database from assets...');
-        try {
-            await Directory(dirname(path)).create(recursive: true);
-        } catch (e) {
-            print('Error creating directory: $e');
-        }
-        
-        try {
-            // Copy from assets
-            final data = await rootBundle.load('assets/$filePath');
-            final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-            await File(path).writeAsBytes(bytes, flush: true);
-            print('Database copied successfully, size: ${bytes.length} bytes');
-        } catch (e) {
-            print('Error copying database: $e');
-        }
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, filePath);
+      
+      print('Database path: $path');
+      
+      final exists = await databaseExists(path);
+      print('Database exists: $exists');
+      
+      if (!exists) {
+          print('Copying database from assets...');
+          try {
+              await Directory(dirname(path)).create(recursive: true);
+          } catch (e) {
+              print('Error creating directory: $e');
+          }
+          
+          try {
+              // Copy from assets
+              final data = await rootBundle.load('assets/$filePath');
+              final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+              await File(path).writeAsBytes(bytes, flush: true);
+              print('Database copied successfully, size: ${bytes.length} bytes');
+          } catch (e) {
+              print('Error copying database: $e');
+          }
+      }
+      
+      final db = await openDatabase(path, version: 1);
+      
+      // Verify the database has data
+      final count = Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM exercise_list'));
+      print('Exercise count in database: $count');
+      
+      return db;
     }
-    
-    final db = await openDatabase(path, version: 1);
-    
-    // Verify the database has data
-    final count = Sqflite.firstIntValue(
-        await db.rawQuery('SELECT COUNT(*) FROM exercise_list'));
-    print('Exercise count in database: $count');
-    
-    return db;
-}
     // creates table from scratch (empty, left here for reference idk)
     // Future _createDB(Database db, int version) async {
        

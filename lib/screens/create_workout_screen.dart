@@ -4,7 +4,6 @@ import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
 import '../class/workout_class.dart';
 
-/// One exercise inside a workout (for this screen only).
 class _WorkoutExerciseEntry {
   final Exercise exercise;
   final int sets;
@@ -25,10 +24,8 @@ class CreateWorkoutScreen extends StatefulWidget {
 class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
   final WorkoutDatabase database = WorkoutDatabase.instance;
 
-  // Workout name
   final TextEditingController workoutNameController = TextEditingController();
 
-  // Controls for picking a single exercise to add
   final TextEditingController setCountController = TextEditingController();
 
   List<String> primaryMuscleOptions = [];
@@ -37,7 +34,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
   List<Exercise> availableExercises = [];
   Exercise? selectedExercise;
 
-  // Exercises added to this workout
   final List<_WorkoutExerciseEntry> workoutExercises = [];
 
   bool isLoadingMuscles = true;
@@ -157,7 +153,7 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
 
     setState(() {
       workoutExercises.add(entry);
-      setCountController.clear(); // reset sets for next add
+      setCountController.clear(); 
     });
   }
 
@@ -185,10 +181,9 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     setState(() => isSaving = true);
 
     try {
-      // Create one Workout row per exercise, all sharing the same workout name
       for (final entry in workoutExercises) {
         final exercise = entry.exercise;
-        if (exercise.id == null) continue; // safety
+        if (exercise.id == null) continue; 
 
         final newWorkoutRow = Workout(
           id: null,
@@ -233,7 +228,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name of Workout
                   const Text(
                     'Name of Workout:',
                     style: TextStyle(
@@ -251,7 +245,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Controls for picking one exercise to add
                   const Text(
                     'Pick an exercise to add:',
                     style: TextStyle(
@@ -261,7 +254,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Primary muscle dropdown
                   DropdownButtonFormField<String>(
                     value: selectedPrimaryMuscle,
                     items: primaryMuscleOptions
@@ -285,7 +277,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Exercise dropdown
                   if (isLoadingExercises)
                     const Center(child: CircularProgressIndicator())
                   else if (availableExercises.isEmpty)
@@ -316,7 +307,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                     ),
                   const SizedBox(height: 8),
 
-                  // Sets for this exercise
                   TextField(
                     controller: setCountController,
                     keyboardType: TextInputType.number,
@@ -327,7 +317,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Add New Exercise button (adds to list, does not save to DB yet)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: ElevatedButton(
@@ -337,7 +326,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // List of exercises area
                   const Text(
                     'List of exercises:',
                     style: TextStyle(
@@ -381,7 +369,6 @@ class _CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Done button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

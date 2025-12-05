@@ -1,3 +1,4 @@
+import 'package:fitlog/screens/first_pickup.dart';
 import 'package:flutter/material.dart';
 import 'package:fitlog/screens/home_screen.dart';
 

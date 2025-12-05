@@ -6,7 +6,7 @@ import '../class/exercise_class.dart';
 import 'mid_workout_exercise_screen.dart';
 
 class SingleWorkoutScreen extends StatefulWidget {
-  final WorkoutGroup workoutGroup; // The selected workout
+  final WorkoutGroup workoutGroup;
 
   const SingleWorkoutScreen({super.key, required this.workoutGroup});
 
@@ -47,10 +47,10 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
         isLoading = false;
       });
 
-      print("Loaded ${exercises.length} exercises for workout: ${widget.workoutGroup.name}");
+      //print("Loaded ${exercises.length} exercises for workout: ${widget.workoutGroup.name}");
     } catch (e, stack) {
-      print("Error loading exercises: $e");
-      print(stack);
+      //print("Error loading exercises: $e");
+      //print(stack);
 
       setState(() {
         errorMessage = "Error: $e";
@@ -59,24 +59,24 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
     }
   }
 
-  Future<void> _startWorkout() async {
+  Future<void> startWorkout() async {
   if (exercises.isEmpty) {
-    print("No exercises available to start this workout.");
+    //print("No exercises available to start this workout.");
     return;
   }
 
-  // Navigate to MidWorkoutScreen starting at exercise index 0
-  /*
+  // Go to MidWorkoutScreen starting at exercise index 0
   Navigator.push(
     context,
     MaterialPageRoute(
       builder: (context) => MidWorkoutExerciseScreen(
+        workoutId: widget.workoutGroup.id ?? 0,
         exercises: exercises,
-        startIndex: 0, // if your screen takes a start index
+        currentIndex: 0, 
       ),
     ),
   );
-  */
+  
 }
 
 
@@ -110,13 +110,28 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
+          onPressed: startWorkout,
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color.fromARGB(255, 69, 151, 192),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
           ),
-          onPressed: _startWorkout,
-          child: const Text(
-            "Start Workout",
-            style: TextStyle(fontSize: 18),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.play_arrow), 
+              SizedBox(width: 8),
+              Text(
+                "Start Workout",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold, 
+                ),
+              ),
+            ],
           ),
         ),
       ),

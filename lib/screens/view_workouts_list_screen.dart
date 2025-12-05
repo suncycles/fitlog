@@ -13,8 +13,6 @@ class WorkoutsListScreen extends StatefulWidget {
     this.selectMode = false,
   });
 
-  // If true, selecting a workout will return it to the previous screen
-  // instead of navigating to the SingleWorkoutScreen.
   final bool selectMode;
 
   @override
@@ -39,7 +37,6 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
         errorMessage = null;
       });
 
-      // Load workouts from db
       List<WorkoutGroup> workoutGroups = 
           await WorkoutDatabase.instance.getGroupedWorkouts();
 
@@ -61,14 +58,11 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
   }
 
   Future<void> _deleteWorkout(WorkoutGroup workoutGroup) async {
-    // Show confirmation dialog
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Workout'),
-        content: Text(
-          'Delete "${workoutGroup.name}"?',
-        ),
+        content: Text('Delete "${workoutGroup.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -86,7 +80,6 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
     if (confirm != true) return;
 
     try {
-      // Delete all exercises in this workout group
       for (var workout in workoutGroup.exercisesInWorkout) {
         if (workout.id != null) {
           await WorkoutDatabase.instance.deleteWorkout(workout.id!);
@@ -102,11 +95,9 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
         ),
       );
 
-      // reload workouts
       loadWorkouts();
     } catch (e) {
       if (!mounted) return;
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error deleting workout: $e'),
@@ -124,31 +115,55 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
       return;
     }
 
-    // Get the first exercise in the group
-    final firstWorkout = workoutGroup.exercisesInWorkout.first;
-    
-    // fetch exercise details using the exerciseId stored in the workout row
-    final exercise = await WorkoutDatabase.instance.getExercise(
-      firstWorkout.exerciseId,
+    // Loading dialog so the user knows we are fetching data
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    if (exercise == null || !mounted) return;
+    try {
+      List<Exercise> exercisesToRun = [];
 
-    // Navigate to MidWorkoutExerciseScreen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MidWorkoutExerciseScreen(
-         
-          workoutId: firstWorkout.id ?? 0, 
-          exerciseId: exercise.id ?? 0,
-          exerciseName: exercise.name,
-          previousWeight: null,
-          previousRepetitions: null,
+      // Loop through every workout item in this group
+      for (var item in workoutGroup.exercisesInWorkout) {
+        final exercise = await WorkoutDatabase.instance.getExercise(item.exerciseId);
+        if (exercise != null) {
+          exercisesToRun.add(exercise);
+        }
+      }
+
+      if (mounted) Navigator.pop(context); 
+
+      if (exercisesToRun.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("Could not load exercises for this workout.")),
+        );
+        return;
+      }
+
+      // Go to MidWorkout with the full list
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MidWorkoutExerciseScreen(
+            workoutId: workoutGroup.exercisesInWorkout.first.id ?? 0, 
+            exercises: exercisesToRun, 
+            currentIndex: 0,           
+          ),
         ),
-      ),
-    );
-}
+      );
+
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error starting workout: $e")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,10 +187,7 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : errorMessage != null
-                        ? _ErrorView(
-                            errorMessage!,
-                            onRetry: loadWorkouts,
-                          )
+                        ? _ErrorView(errorMessage!, onRetry: loadWorkouts)
                         : workouts.isEmpty
                             ? const _EmptyView()
                             : ListView.builder(
@@ -188,7 +200,6 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
                                       selectMode: widget.selectMode,
                                       onTap: () {
                                         if (widget.selectMode) {
-                                          // Return the selected workout to previous screen
                                           Navigator.pop(context, workouts[index]);
                                         } else {
                                           Navigator.push(
@@ -208,7 +219,7 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
                                 },
                               ),
               ),
-              // Create New Workout button
+              
               _CreateWorkoutCard(
                 onTap: () async {
                   final result = await Navigator.push(
@@ -217,8 +228,6 @@ class _WorkoutsListScreenState extends State<WorkoutsListScreen> {
                       builder: (context) => const CreateWorkoutScreen(),
                     ),
                   );
-                  
-                  // Reload
                   if (result == true) {
                     loadWorkouts();
                   }
@@ -240,7 +249,7 @@ class _EmptyView extends StatelessWidget {
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           Icon(Icons.fitness_center, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
@@ -281,13 +290,12 @@ class _WorkoutCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 204, 229, 255),
+          color: const Color.fromARGB(255, 242, 242, 242),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Workout name and delete button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -308,8 +316,6 @@ class _WorkoutCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-
-            // Number of exercises
             Text(
               "${workout.exercisesInWorkout.length} exercise${workout.exercisesInWorkout.length != 1 ? 's' : ''}",
               style: TextStyle(
@@ -318,8 +324,6 @@ class _WorkoutCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-
-            // Start Workout button
             if(!selectMode)
               SizedBox(
                 width: double.infinity,
@@ -352,7 +356,7 @@ class _CreateWorkoutCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.green[400],
+          color: const Color.fromARGB(255, 69, 151, 192),
           borderRadius: BorderRadius.circular(6),
         ),
         child: const Center(

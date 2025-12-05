@@ -45,7 +45,6 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
     }
   }
 
-  // --- Core Function: Add Exercise to Workout ---
   Future<void> _addExerciseToWorkout(BuildContext context) async {
     final selectedWorkout = await Navigator.push<WorkoutGroup>(
       context,
@@ -136,14 +135,13 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
               border: Border.all(color: Colors.blueGrey.shade200),
             ),
             child: const Text(
-              'High-Resolution Exercise Demonstration Video/GIF',
+              'Exercise Demonstration Video/GIF',
               style: TextStyle(fontSize: 16, color: Colors.black54),
             ),
           ),
           
           const SizedBox(height: 24),
           
-          // --- Dynamic Muscle Group and Equipment Info ---
           _buildDetailRow(
             icon: Icons.fitness_center,
             label: 'Primary Muscle',
@@ -162,7 +160,6 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
           
           const SizedBox(height: 24),
 
-          // Exercise Details Section
           const Text(
             'Instructions:',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -175,7 +172,6 @@ class _ExerciseViewScreenState extends State<ExerciseViewScreen> {
 
           const SizedBox(height: 40),
 
-          // Add to Workout Button
           SizedBox(
             height: 50,
             child: ElevatedButton.icon(

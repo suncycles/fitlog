@@ -131,12 +131,10 @@ class BodyScreenState extends State<BodyScreen> {
 
     if (!mounted) return;
 
-    // 3. Reset the state *before* navigation occurs
     setState(() {
       _bodyParts = const BodyParts();
     });
 
-    // 4. Navigate to ExerciseListScreen
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/history_class.dart';
+import '../class/exercise_class.dart'; 
 
 class MidWorkoutExerciseScreen extends StatefulWidget {
   final int workoutId;
-  final int exerciseId;
-  final String exerciseName;
-
-  final int? previousWeight;               // last used weight
-  final List<int>? previousRepetitions;    // last reps for each set
+  final List<Exercise> exercises; 
+  final int currentIndex;
 
   const MidWorkoutExerciseScreen({
     super.key,
     required this.workoutId,
-    required this.exerciseId,
-    required this.exerciseName,
-    this.previousWeight,
-    this.previousRepetitions,
+    required this.exercises,
+    required this.currentIndex,
   });
 
   @override
@@ -27,23 +23,41 @@ class MidWorkoutExerciseScreen extends StatefulWidget {
 class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
   static const int maxSupportedSets = 10;
 
+  late Exercise currentExercise; 
+
+  int? previousWeight;
+  List<int>? previousRepetitions;
+
   final TextEditingController weightInputController = TextEditingController();
   final TextEditingController setCountController = TextEditingController();
-
   final List<TextEditingController> repetitionControllers = [];
 
   bool isSaving = false;
-
+  bool isLoadingHistory = true; 
 
   @override
   void initState() {
     super.initState();
+    currentExercise = widget.exercises[widget.currentIndex];
 
-    setCountController.text = '3';     // default sets: 3
+    setCountController.text = '3';
     _initializeRepetitionFields(3);
 
-    if (widget.previousWeight != null) {
-      weightInputController.text = widget.previousWeight.toString();
+    _loadPreviousHistory();
+  }
+
+
+  Future<void> _loadPreviousHistory() async {
+    try {
+
+    } catch (e) {
+      print("Error loading history: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingHistory = false;
+        });
+      }
     }
   }
 
@@ -57,36 +71,50 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
     super.dispose();
   }
 
-   void _showSnackMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  void _showSnackMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _initializeRepetitionFields(int count) {
     for (final controller in repetitionControllers) {
       controller.dispose();
     }
-
     repetitionControllers
       ..clear()
       ..addAll(List.generate(count, (_) => TextEditingController()));
-
     setState(() {});
   }
 
   void _handleSetCountChanged(String value) {
     final parsed = int.tryParse(value);
     if (parsed == null || parsed <= 0) return;
-
     final adjustedCount = parsed.clamp(1, maxSupportedSets);
     _initializeRepetitionFields(adjustedCount);
   }
 
+  void _proceedToNextExercise() {
+    if (widget.currentIndex < widget.exercises.length - 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MidWorkoutExerciseScreen(
+            workoutId: widget.workoutId,
+            exercises: widget.exercises,
+            currentIndex: widget.currentIndex + 1, 
+          ),
+        ),
+      );
+    } else {
+      Navigator.popUntil(context, (route) => route.isFirst);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Workout Completed!")),
+      );
+    }
+  }
+
   Future<void> _saveExerciseHistory() async {
     if (isSaving) return;
-
-    //Validate Weight 
 
     final weightText = weightInputController.text.trim();
     if (weightText.isEmpty) {
@@ -100,7 +128,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
       return;
     }
 
-    // Validate Repetitions
     final enteredReps = repetitionControllers
         .map((c) => c.text.trim())
         .where((value) => value.isNotEmpty)
@@ -111,12 +138,9 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
       return;
     }
 
-
     final formattedSets = <String>[
       for (final reps in enteredReps) '${parsedWeight}x$reps'
     ];
-
-    
 
     setState(() => isSaving = true);
 
@@ -125,13 +149,11 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
         ExerciseHistory(
           id: null,
           workoutId: widget.workoutId,
-          exerciseId: widget.exerciseId,
+          exerciseId: currentExercise.id!, 
           date: DateTime.now(),
           sets: formattedSets,
           notes: null,
-
-          // UI only fields
-          exerciseName: widget.exerciseName,
+          exerciseName: currentExercise.name, 
           workoutName: null,
           weight: parsedWeight,
           reps: int.tryParse(enteredReps.first),
@@ -139,49 +161,48 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
       );
 
       if (!mounted) return;
-
       _showSnackMessage('Saved to history');
-      Navigator.pop(context, true);
+      
+      _proceedToNextExercise(); 
 
     } catch (error) {
       if (!mounted) return;
       _showSnackMessage('Error saving: $error');
-
     } finally {
       if (mounted) {
         setState(() => isSaving = false);
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    final previousWeightText =
-        widget.previousWeight != null ? '${widget.previousWeight} lbs' : 'N/A';
+    final isLastExercise = widget.currentIndex >= widget.exercises.length - 1;
+    final buttonText = isLastExercise ? "Finish Workout" : "Next Exercise";
+    final nextButtonColor = isLastExercise ? Colors.green : Colors.blue;
 
-    final previousRepetitionText =
-        (widget.previousRepetitions != null &&
-                widget.previousRepetitions!.isNotEmpty)
-            ? widget.previousRepetitions!.join(', ')
+    final previousWeightText = previousWeight != null ? '$previousWeight lbs' : 'N/A';
+    final previousRepetitionText = (previousRepetitions != null && previousRepetitions!.isNotEmpty)
+            ? previousRepetitions!.join(', ')
             : 'N/A';
 
     return Scaffold(
       appBar: AppBar(
-        leading: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Back'),
+        title: Text("Exercise ${widget.currentIndex + 1}/${widget.exercises.length}"), // Helpful title
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context), 
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _proceedToNextExercise, 
             child: const Text(
-              'Skip For Now',
+              'Skip',
               style: TextStyle(color: Colors.red),
             ),
           ),
         ],
-        automaticallyImplyLeading: false,
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: ListView(
@@ -190,17 +211,14 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
               padding: const EdgeInsets.all(12),
               color: Colors.blue[100],
               child: Text(
-                widget.exerciseName,
+                currentExercise.name ?? "Unnamed", // Use object
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            
             Container(
               height: 150,
               alignment: Alignment.center,
@@ -210,20 +228,19 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
                 style: TextStyle(fontSize: 16),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            Text(
-              'Previous Weight: $previousWeightText',
-              style: const TextStyle(fontSize: 16),
-            ),
+            isLoadingHistory 
+              ? const Center(child: LinearProgressIndicator()) 
+              : Text(
+                  'Previous Weight: $previousWeightText',
+                  style: const TextStyle(fontSize: 16),
+                ),
+            
             const SizedBox(height: 12),
             Row(
               children: [
-                const Text(
-                  'Weight (lbs): ',
-                  style: TextStyle(fontSize: 16),
-                ),
+                const Text('Weight (lbs): ', style: TextStyle(fontSize: 16)),
                 Expanded(
                   child: TextField(
                     controller: weightInputController,
@@ -237,13 +254,9 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
               ],
             ),
             const SizedBox(height: 20),
-
             Row(
               children: [
-                const Text(
-                  'Number of sets: ',
-                  style: TextStyle(fontSize: 16),
-                ),
+                const Text('Number of sets: ', style: TextStyle(fontSize: 16)),
                 SizedBox(
                   width: 80,
                   child: TextField(
@@ -258,25 +271,14 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-
-            
-            const Text(
-              'Repetitions:',
-              style: TextStyle(fontSize: 16),
-            ),
-
+            const Text('Repetitions:', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 4),
-
             Text(
-              'Previous Repetitions for current weight: $previousRepetitionText',
+              'Previous Repetitions: $previousRepetitionText',
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
-
             const SizedBox(height: 14),
-
-            
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -296,43 +298,24 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
                   ),
               ],
             ),
-
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: nextButtonColor),
                 onPressed: isSaving ? null : _saveExerciseHistory,
                 child: isSaving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Next Exercise'),
+                    : Text(buttonText, style: const TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
           ],
         ),
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workouts',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.popUntil(context, (route) => route.isFirst);
-          }
-        },
       ),
     );
   }

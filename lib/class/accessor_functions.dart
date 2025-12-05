@@ -73,6 +73,24 @@ class WorkoutDatabase {
     return maps.map((map) => ExerciseHistory.fromJson(map)).toList();
   }
 
+  Future<ExerciseHistory?> getLastExerciseHistory(int exerciseId) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final maps = await db.query(
+      'exercise_history',
+      where: 'exercise_id = ?', 
+      whereArgs: [exerciseId],
+      orderBy: 'date DESC',     
+      limit: 1,                 
+    );
+
+    if (maps.isNotEmpty) {
+      return ExerciseHistory.fromJson(maps.first);
+    } else {
+      return null; 
+    }
+  }
+
   Future<int> getExerciseCountForPrimaryMuscle(String primaryMuscle) async {
     final db = await DatabaseHelper.instance.database;
 
@@ -98,7 +116,6 @@ class WorkoutDatabase {
   Future<List<WorkoutGroup>> getGroupedWorkouts() async {
     final db = await DatabaseHelper.instance.database;
 
-    // Get all workouts
     final rows = await db.query('workout_builder');
 
     if (rows.isEmpty) {
@@ -106,10 +123,8 @@ class WorkoutDatabase {
       return [];
     }
 
-    // Convert to Workout objects
     List<Workout> workouts = rows.map((row) => Workout.fromJson(row)).toList();
 
-    // Group by workout_name
     Map<String, List<Workout>> grouped = {};
     for (var w in workouts) {
       if (!grouped.containsKey(w.name)) {
@@ -118,7 +133,6 @@ class WorkoutDatabase {
       grouped[w.name]!.add(w);
     }
 
-    // Convert to WorkoutGroup objects
     List<WorkoutGroup> workoutGroups = grouped.entries
         .map((entry) => WorkoutGroup(
               name: entry.key,
@@ -172,18 +186,15 @@ class WorkoutDatabase {
     );
   }
 
-Future<int> createExerciseHistory(ExerciseHistory history) async {
-  final db = await DatabaseHelper.instance.database;
+  Future<int> createExerciseHistory(ExerciseHistory history) async {
+    final db = await DatabaseHelper.instance.database;
 
-  // Start from the JSON map
-  final data = history.toJson();
-
-  // Let SQLite auto-generate history_id if it's null
-  data.remove('history_id');
-
-  return await db.insert('exercise_history', data);
-}
-
+    if (history.id != null) {
+      return await db.insert('exercise_history', history.toJson());
+    } else {
+      return 0;
+    }
+  }
 
   Future<void> close() async {
     final db = _database;

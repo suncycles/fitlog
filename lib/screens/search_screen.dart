@@ -38,26 +38,14 @@ class _ExercisesPanel extends StatefulWidget {
 }
 
 class _ExercisesPanelState extends State<_ExercisesPanel> {
-  // Text controller and current search query
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  // Load all muscle groups from database
   List<String> _allMuscleGroups = [];
-  // Filtered list shown in UI
   List<String> _uiMuscleGroups = [];
 
   bool _isLoading = true;
 
-  /*
-  Load the list of muscle groups from workoutDB, and exercise counts of each muscle group.
-
-  Args:
-    none
-
-  Returns:
-    type: Future<void>
-  */
   Future<void> _loadMuscleGroups() async {
     final db = WorkoutDatabase.instance;
     final musclegroups = await db.getPrimaryMuscles();
@@ -74,15 +62,6 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
     _loadMuscleGroups();
   }
 
-  /*
-  Updates '_query' and '_uiMuscleGroups' when the users search.
-
-  Args:
-    none
-
-  Returns:
-    type: void
-  */
   void _doSearch() {
     setState(() {
       _query = _searchController.text.trim();
@@ -95,15 +74,6 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
     });
   }
 
-  /*
-  Disposes resources of the TextEditingController.
-
-  Args:
-    none
-
-  Returns:
-    type: void
-  */
   @override
   void dispose() {
     _searchController.dispose();
@@ -217,15 +187,6 @@ class _ExercisesPanelState extends State<_ExercisesPanel> {
   }
 }
 
-/*
-Card widget for one primary muscle in the list.
-
-Includes:
-- primary muscle name
-- "# of exercises found"
-- image
-- "Browse All" button to go to ExerciseListScreen.
-*/
 class _PrimaryMuscleCard extends StatefulWidget {
   const _PrimaryMuscleCard({super.key, required this.primaryMuscle});
 
@@ -245,15 +206,6 @@ class _PrimaryMuscleCardState extends State<_PrimaryMuscleCard> {
     _loadExerciseCount();
   }
 
-  /*
-  Loads the number of exercises of the primary muscles.
-
-  Args:
-    None
-
-  Returns:
-    Future<void>
-  */
   Future<void> _loadExerciseCount() async {
     final db = WorkoutDatabase.instance;
     final count = await db.getExerciseCountForPrimaryMuscle(widget.primaryMuscle);
@@ -301,7 +253,7 @@ class _PrimaryMuscleCardState extends State<_PrimaryMuscleCard> {
           ),
           const SizedBox(width: 16),
 
-          // Image and 'Browse All' button
+
           Column(
             children: [
               Container(
