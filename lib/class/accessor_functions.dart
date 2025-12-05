@@ -188,11 +188,18 @@ class WorkoutDatabase {
 
   Future<int> createExerciseHistory(ExerciseHistory history) async {
     final db = await DatabaseHelper.instance.database;
-
-    if (history.id != null) {
-      return await db.insert('exercise_history', history.toJson());
-    } else {
-      return 0;
+    if (history.id == null) {
+      print("DatabaseHelper: Attempting to insert new exercise history...");
+      final id = await db.insert(
+        'exercise_history', 
+        history.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print("DatabaseHelper: Insertion successful. New ID: $id");
+      return id;
+    }else {
+      print("DatabaseHelper: Cannot create history; ID is already set (ID: ${history.id}).");
+      return history.id!;
     }
   }
 

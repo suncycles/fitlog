@@ -17,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   // Default username
-  String _userName = 'Joe';
+  String _userName = 'Loading...';
 
   List<Widget> get _screens => [
         _HomepagePanel(userName: _userName),
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadUserName();
   }
-
+//get username from shared preferences
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString('user_name');
@@ -38,6 +38,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (stored != null && stored.isNotEmpty) {
       if (mounted) {
         setState(() => _userName = stored);
+      }
+    } else {
+      if (mounted) {
+        setState(() => _userName = 'User');
       }
     }
   }

@@ -183,7 +183,7 @@ class _FirstPickUpState extends State<FirstPickUp> {
                     await prefs.setString('user_name', nameController.text.trim());
 
                     if (!context.mounted) return;
-                    Navigator.push(
+                    Navigator.pushReplacement( 
                       context,
                       MaterialPageRoute(
                         builder: (context) => const HomeScreen(),

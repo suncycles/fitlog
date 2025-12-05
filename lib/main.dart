@@ -1,8 +1,8 @@
-import 'package:fitlog/screens/first_pickup.dart';
 import 'package:flutter/material.dart';
-import 'package:fitlog/screens/home_screen.dart';
+import 'package:fitlog/screens/root_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); 
   runApp(const MyApp());
 }
 
@@ -11,13 +11,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FitLog',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
+    return const MaterialApp(
+      title: 'LiftLog',
+      home: RootScreen(), // <-- Start here!
     );
   }
 }
