@@ -229,13 +229,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            isLoadingHistory 
-              ? const Center(child: LinearProgressIndicator()) 
-              : Text(
-                  'Previous Weight: $previousWeightText',
-                  style: const TextStyle(fontSize: 16),
-                ),
             
             const SizedBox(height: 12),
             Row(
@@ -274,10 +267,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
             const SizedBox(height: 20),
             const Text('Repetitions:', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 4),
-            Text(
-              'Previous Repetitions: $previousRepetitionText',
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
-            ),
             const SizedBox(height: 14),
             Wrap(
               spacing: 10,

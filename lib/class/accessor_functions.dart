@@ -196,6 +196,46 @@ class WorkoutDatabase {
     }
   }
 
+  Future<int?> getLastWeightForExercise(int exerciseId) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query(
+      'exercise_history', 
+      columns: ['weight'],
+      where: 'exerciseId = ?',
+      whereArgs: [exerciseId],
+      orderBy: 'date DESC', 
+      limit: 1, // Only get the single most recent one
+    );
+
+    if (result.isNotEmpty) {
+      // Assuming you have a fromMap or fromJson factory
+      return result.first['weight'] as int; 
+    } else {
+      return null;
+    }
+  }
+
+  Future<int?> getLastRepsForExercise(int exerciseId) async {
+    final db = await DatabaseHelper.instance.database;
+
+    final result = await db.query(
+      'exercise_history', 
+      columns: ['weight'],
+      where: 'exerciseId = ?',
+      whereArgs: [exerciseId],
+      orderBy: 'date DESC', 
+      limit: 1, // Only get the single most recent one
+    );
+
+    if (result.isNotEmpty) {
+      // Assuming you have a fromMap or fromJson factory
+      return result.first['weight'] as int; 
+    } else {
+      return null;
+    }
+  }
+
   Future<void> close() async {
     final db = _database;
     if (db != null) await db.close();
