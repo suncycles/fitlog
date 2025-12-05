@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'view_workouts_list_screen.dart';
-import 'first_pickup.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'search_screen.dart';
 import 'recent_session_screen.dart';
 import 'exercise_progress_screen.dart';

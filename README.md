@@ -1,16 +1,14 @@
 # fitlog
 
-A new Flutter project.
+Problem: Many Beginners struggle to track progress using things like mental notes, built in notes apps, etc
+Goal: Build an app to track weightlifting easily and guide users
+Audience: Beginners to Advanced Lifters
 
-## Getting Started
+# Features: 
 
-This project is a starting point for a Flutter application.
+Create new workouts 
+Easy tracking during workouts
+Exercises categorized by muscle group
+Add exercises to workout easily
+Find exercises easily using our interactive muscle group finder
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
