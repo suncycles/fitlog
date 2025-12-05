@@ -3,6 +3,7 @@ import '../class/accessor_functions.dart';
 import '../class/database_helper.dart';
 import '../class/workout_class.dart';
 import '../class/exercise_class.dart';
+import 'mid_workout_exercise_screen.dart';
 
 class SingleWorkoutScreen extends StatefulWidget {
   final WorkoutGroup workoutGroup; // The selected workout
@@ -58,6 +59,27 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
     }
   }
 
+  Future<void> _startWorkout() async {
+  if (exercises.isEmpty) {
+    print("No exercises available to start this workout.");
+    return;
+  }
+
+  // Navigate to MidWorkoutScreen starting at exercise index 0
+  /*
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => MidWorkoutExerciseScreen(
+        exercises: exercises,
+        startIndex: 0, // if your screen takes a start index
+      ),
+    ),
+  );
+  */
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +105,19 @@ class _SingleWorkoutScreenState extends State<SingleWorkoutScreen> {
                             );
                           },
                         ),
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          onPressed: _startWorkout,
+          child: const Text(
+            "Start Workout",
+            style: TextStyle(fontSize: 18),
+          ),
         ),
       ),
     );
@@ -128,6 +163,8 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 }
+
+
 
 class _EmptyView extends StatelessWidget {
   const _EmptyView();

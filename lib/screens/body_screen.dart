@@ -28,14 +28,12 @@ class BodyScreenState extends State<BodyScreen> {
       setState(() {
         _availableMuscles = muscles;
       });
-      // Print available muscles to help with mapping
       print('Available muscle groups in database: $muscles');
     } catch (e) {
       print('Error loading muscles: $e');
     }
   }
 
-  // Helper to get all selected body parts as a string for debugging
   String _getSelectedParts(BodyParts parts) {
     List<String> selected = [];
     
@@ -59,89 +57,75 @@ class BodyScreenState extends State<BodyScreen> {
     return selected.join(', ');
   }
 
-  // Map body parts to muscle groups
   String? _mapBodyPartToMuscle(BodyParts bodyParts) {
     
     _getSelectedParts(bodyParts);
     
-    // Head and neck
     if (bodyParts.head) return 'neck';
     if (bodyParts.neck) return 'neck';
     
-    // Shoulders
     if (bodyParts.leftShoulder || bodyParts.rightShoulder) return 'shoulders';
     
-    // Upper arms
     if (bodyParts.leftUpperArm || bodyParts.rightUpperArm) {
-      return 'biceps'; // Default to biceps
+      return 'biceps';
     }
     
-    // Forearms
     if (bodyParts.leftLowerArm || bodyParts.rightLowerArm) return 'forearms';
     if (bodyParts.leftElbow || bodyParts.rightElbow) return 'forearms';
     
-    // Hands
     if (bodyParts.leftHand || bodyParts.rightHand) return 'forearms';
     
-    // Core/Torso
     if (bodyParts.upperBody) return 'chest';
     if (bodyParts.abdomen) return 'abdominals';
     
-    // Legs - Upper leg contains quads, hamstrings, and glutes
     if (bodyParts.leftUpperLeg || bodyParts.rightUpperLeg) {
-      // Default to quads
       return 'quadriceps';
     }
     
-    // Lower legs
     if (bodyParts.leftLowerLeg || bodyParts.rightLowerLeg) return 'calves';
     if (bodyParts.leftKnee || bodyParts.rightKnee) return 'quadriceps';
     
-    // Feet
     if (bodyParts.leftFoot || bodyParts.rightFoot) return 'calves';
     
-    // Lower body general
     if (bodyParts.lowerBody) return 'abdominals';
     
     return null;
   }
 
   void onBodyPartSelected(BodyParts updatedParts) async {
+    
     setState(() => _bodyParts = updatedParts);
 
-    // Map the selected body part to a muscle group
     String? muscleGroup = _mapBodyPartToMuscle(updatedParts);
     
     if (muscleGroup == null) {
-      // Show error message if no valid body part selected
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a body part'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      //Clear selection
+      if (mounted) {
+        setState(() => _bodyParts = const BodyParts());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a body part'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       return;
     }
 
-    // Try to find exact or similar muscle group in database
     String? finalMuscleGroup = muscleGroup;
     
     if (_availableMuscles != null) {
-      // Check if exact match exists
       bool exactMatch = _availableMuscles!.any(
         (m) => m.toLowerCase() == muscleGroup.toLowerCase()
       );
       
       if (!exactMatch) {
-        // Try to find a similar muscle group name
         try {
           finalMuscleGroup = _availableMuscles!.firstWhere(
             (m) => m.toLowerCase().contains(muscleGroup.toLowerCase()) ||
                    muscleGroup.toLowerCase().contains(m.toLowerCase()),
           );
         } catch (e) {
-          // No similar match found, use original
           finalMuscleGroup = muscleGroup;
         }
       }
@@ -149,7 +133,12 @@ class BodyScreenState extends State<BodyScreen> {
 
     if (!mounted) return;
 
-    // Navigate to ExerciseListScreen with the selected muscle group
+    // 3. Reset the state *before* navigation occurs
+    setState(() {
+      _bodyParts = const BodyParts();
+    });
+
+    // 4. Navigate to ExerciseListScreen
     Navigator.push(
       context,
       MaterialPageRoute(
