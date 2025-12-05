@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../class/accessor_functions.dart';
 import '../class/history_class.dart';
+import '../class/workout_class.dart';
+import '../class/exercise_class.dart';
 
 class MidWorkoutExerciseScreen extends StatefulWidget {
   final int workoutId;
   final int exerciseId;
   final String exerciseName;
 
-  final int? previousWeight;               // last used weight
-  final List<int>? previousRepetitions;    // last reps for each set
+  final int? previousWeight; // last used weight
+  final List<int>? previousRepetitions; // last reps for each set
 
   const MidWorkoutExerciseScreen({
     super.key,
@@ -30,17 +32,16 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
   final TextEditingController weightInputController = TextEditingController();
   final TextEditingController setCountController = TextEditingController();
-
   final List<TextEditingController> repetitionControllers = [];
 
   bool isSaving = false;
-
 
   @override
   void initState() {
     super.initState();
 
-    setCountController.text = '3';     // default sets: 3
+    // default sets: 3
+    setCountController.text = '3';
     _initializeRepetitionFields(3);
 
     if (widget.previousWeight != null) {
@@ -58,7 +59,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
     super.dispose();
   }
 
-   void _showSnackMessage(String message) {
+  void _showSnackMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -84,11 +85,11 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
     _initializeRepetitionFields(adjustedCount);
   }
 
+  /// Save this exercise in history, then move to the next exercise (if any).
   Future<void> _saveExerciseHistory() async {
     if (isSaving) return;
 
-    //Validate Weight 
-
+    // ---- Validate weight ----
     final weightText = weightInputController.text.trim();
     if (weightText.isEmpty) {
       _showSnackMessage('Please enter a weight');
@@ -101,7 +102,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
       return;
     }
 
-    // Validate Repetitions
+    // ---- Validate repetitions ----
     final enteredReps = repetitionControllers
         .map((c) => c.text.trim())
         .where((value) => value.isNotEmpty)
@@ -112,12 +113,10 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
       return;
     }
 
-
+    // Build "weight x reps" strings, e.g. "200x8"
     final formattedSets = <String>[
       for (final reps in enteredReps) '${parsedWeight}x$reps'
     ];
-
-    
 
     setState(() => isSaving = true);
 
@@ -130,8 +129,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
           date: DateTime.now(),
           sets: formattedSets,
           notes: null,
-
-          // UI only fields
+          // optional UI fields – keep if they exist in your model
           exerciseName: widget.exerciseName,
           workoutName: null,
           weight: parsedWeight,
@@ -141,19 +139,86 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
       if (!mounted) return;
 
-      _showSnackMessage('Saved to history');
-      Navigator.pop(context, true);
-
+      // After saving, try to move to the next exercise for this workout
+      await _goToNextExercise();
     } catch (error) {
       if (!mounted) return;
       _showSnackMessage('Error saving: $error');
-
     } finally {
       if (mounted) {
         setState(() => isSaving = false);
       }
     }
   }
+
+  /// Find the next exercise in this workout and navigate to it.
+  /// If there is no next exercise, just pop back.
+  Future<void> _goToNextExercise() async {
+    final db = WorkoutDatabase.instance;
+
+    
+    final currentWorkout = await db.getWorkout(widget.workoutId);
+    if (currentWorkout == null) {
+      if (mounted) Navigator.pop(context); 
+      return;
+    }
+
+    
+    final groupedWorkouts = await db.getGroupedWorkouts();
+
+    WorkoutGroup? currentGroup;
+    for (final group in groupedWorkouts) {
+      if (group.name == currentWorkout.name) {
+        currentGroup = group;
+        break;
+      }
+    }
+
+    if (currentGroup == null) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    final exercisesInWorkout = currentGroup.exercisesInWorkout;
+    if (exercisesInWorkout.isEmpty) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+
+    final currentIndex =
+        exercisesInWorkout.indexWhere((w) => w.id == currentWorkout.id);
+
+    // If not found or already last exercise -> workout finished
+    if (currentIndex == -1 || currentIndex + 1 >= exercisesInWorkout.length) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    
+    final nextWorkout = exercisesInWorkout[currentIndex + 1];
+
+    // Look up the exercise name from exercise_list
+    final nextExercise = await db.getExercise(nextWorkout.exerciseId);
+    final nextExerciseName = nextExercise?.name ?? 'Exercise';
+
+    if (!mounted) return;
+
+    // 5. Replace this screen with a new mid-workout screen for the next exercise
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MidWorkoutExerciseScreen(
+          workoutId: nextWorkout.id!,
+          exerciseId: nextWorkout.exerciseId,
+          exerciseName: nextExerciseName,
+          previousWeight: null,          
+          previousRepetitions: null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final previousWeightText =
@@ -182,11 +247,11 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
         ],
         automaticallyImplyLeading: false,
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: ListView(
           children: [
+            // Exercise name header
             Container(
               padding: const EdgeInsets.all(12),
               color: Colors.blue[100],
@@ -201,7 +266,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
             const SizedBox(height: 16),
 
-            
+            // Exercise demonstration placeholder
             Container(
               height: 150,
               alignment: Alignment.center,
@@ -214,11 +279,14 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
             const SizedBox(height: 20),
 
+            // Previous weight
             Text(
               'Previous Weight: $previousWeightText',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 12),
+
+            // Weight input
             Row(
               children: [
                 const Text(
@@ -237,8 +305,10 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
 
+            // Number of sets
             Row(
               children: [
                 const Text(
@@ -262,7 +332,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
             const SizedBox(height: 20),
 
-            
             const Text(
               'Repetitions:',
               style: TextStyle(fontSize: 16),
@@ -277,7 +346,7 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
 
             const SizedBox(height: 14),
 
-            
+            // Repetition fields
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -299,6 +368,8 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
             ),
 
             const SizedBox(height: 28),
+
+            // Next Exercise button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -315,7 +386,6 @@ class _MidWorkoutExerciseScreenState extends State<MidWorkoutExerciseScreen> {
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.blueAccent,
         unselectedItemColor: Colors.grey,
