@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'exercise_class.dart';
-import 'history_class.dart';
-import 'workout_class.dart';
-import 'database_helper.dart';
+import '../class/exercise_class.dart';
+import '../class/history_class.dart';
+import '../class/workout_class.dart';
+import '../class/database_helper.dart';
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart';
