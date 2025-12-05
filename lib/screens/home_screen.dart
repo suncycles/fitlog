@@ -40,20 +40,20 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // No stored name - show first-time pickup form
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final name = await Navigator.push<String?>(
-        context,
-        MaterialPageRoute(builder: (_) => const FirstPickUp()),
-      );
+    // // No stored name - show first-time pickup form
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   final name = await Navigator.push<String?>(
+    //     context,
+    //     MaterialPageRoute(builder: (_) => const FirstPickUp()),
+    //   );
       
-      if (name != null && name.isNotEmpty) {
-        await prefs.setString('user_name', name);
-        if (mounted) {
-          setState(() => _userName = name);
-        }
-      }
-    });
+    //   if (name != null && name.isNotEmpty) {
+    //     await prefs.setString('user_name', name);
+    //     if (mounted) {
+    //       setState(() => _userName = name);
+    //     }
+    //   }
+    // });
   }
 
   @override
