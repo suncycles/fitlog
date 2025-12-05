@@ -3,7 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../class/accessor_functions.dart'; 
 import '../class/history_class.dart';
 import '../class/workout_class.dart';
-import '../class/exercise_class.dart'; 
 
 class ProgressRecord {
   final int exerciseId;

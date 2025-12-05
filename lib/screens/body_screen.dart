@@ -1,8 +1,6 @@
 import 'package:fitlog/class/accessor_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:body_part_selector/body_part_selector.dart';
-import '../class/database_helper.dart';
-import '../class/exercise_class.dart';
 import 'exercise_list_screen.dart';
 
 class BodyScreen extends StatefulWidget {

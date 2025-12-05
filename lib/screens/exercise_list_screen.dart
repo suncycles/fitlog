@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../class/accessor_functions.dart';
 import '../class/exercise_class.dart';
 import '../class/database_helper.dart';
-import '../screens/view_workouts_list_screen.dart';
-import '../class/workout_class.dart';
 import 'exercise_view_screen.dart';
 
 class ExerciseListScreen extends StatefulWidget {
@@ -26,7 +24,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   }
 
   Future<void> loadExercises() async {
-    // ... (loadExercises logic remains the same)
     try {
       setState(() {
         isLoading = true;
@@ -71,9 +68,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // Muscle group title
         title: Text(titleText),
-        // Back button (Using a standard back button icon is more idiomatic)
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -104,7 +99,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     );
   }
 
-  // Helper widgets for build method clarity (Optional but good practice)
+  // Helper widgets for build
   Widget _buildErrorWidget(BuildContext context) {
     return Center(
       child: Column(
@@ -150,7 +145,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   }
 }
 
-// --- New Clickable Exercise Panel Widget ---
+// Exercise Panel buttons
 class _ExercisePanel extends StatelessWidget {
   const _ExercisePanel({super.key, required this.exercise});
 
@@ -166,15 +161,12 @@ class _ExercisePanel extends StatelessWidget {
       return;
     }
 
-    // Navigate to the ExerciseViewScreen (you must create this screen)
-    // Pass the necessary information (ID and Name)
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ExerciseViewScreen( // <-- This is the screen you need to create
+        builder: (_) => ExerciseViewScreen( 
           exerciseId: exercise.id!,
           exerciseName: exercise.name ?? 'Unknown Exercise',
-          // You might pass other details here if ExerciseViewScreen needs them
         ),
       ),
     );
@@ -182,7 +174,6 @@ class _ExercisePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use an InkWell with a Card or Container for a nice visual effect on tap
     return InkWell(
       onTap: () => _navigateToExerciseView(context),
       child: Card(
@@ -207,7 +198,7 @@ class _ExercisePanel extends StatelessWidget {
                 height: 120,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 204, 229, 255), // Changed color for distinction
+                  color: const Color.fromARGB(255, 204, 229, 255), 
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -216,7 +207,6 @@ class _ExercisePanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              // Small indicator that it's clickable
               const Align(
                 alignment: Alignment.centerRight,
                 child: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
@@ -228,10 +218,3 @@ class _ExercisePanel extends StatelessWidget {
     );
   }
 }
-
-/*
-The original _ExerciseCard and its 'Add to workout' logic is removed, 
-as the prompt asked to make the exercise a clickable panel to navigate
-to a view screen. The 'Add to workout' logic would now typically be moved 
-*inside* the ExerciseViewScreen.
-*/
